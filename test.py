@@ -1,14 +1,12 @@
 from scipy.optimize import linprog
 import networkx as nx
 import pprint
-import json
 from networkx import utils
-# from networkx.utils import powerlaw_sequence
 from networkx.algorithms.bipartite.generators import configuration_model
+from networkx.algorithms import isomorphism
 from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
 from networkx.algorithms.components import is_connected
 import numpy as np
-from numpy import random
 
 # IMPORTANT: By default bounds on a variable are 0 <= v < +inf
 
@@ -117,10 +115,10 @@ def run_LP_with_maxs(G, G_prime, G_maxs=None, G_prime_maxs=None, goal_node=None)
             new_constraint = [1 if j % N == i else 0 for j in range(0, N * N)]
             A.append(new_constraint)
             b.append(G_maxs[i])
-    return linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":True, "maxiter":N*N*N*N*100})
+    return linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
 
 
-for i in range(1,2):
+for i in range(1,15):
     print("Creating Pairs of Graphs")
     good = False
     while not good:
@@ -137,7 +135,31 @@ for i in range(1,2):
         G_prime = make_graph_with_same_degree_dist(G)
     G_with_G = run_LP_with_maxs(G, G)
     G_prime_with_G_prime = run_LP_with_maxs(G_prime, G_prime)
-    print("\n\nG with G:")
-    print(G_with_G)
-    print("\n\nG_prime with G_prime:")
-    print(G_prime_with_G_prime)
+    # print("\n\nG with G:")
+    # print(G_with_G)
+    # print("\n\nG_prime with G_prime:")
+    # print(G_prime_with_G_prime)
+    N = len(G.nodes())
+    G_maxs = [0.01 for n in range(0, N)]
+    G_prime_maxs = [0 for n in range(0, N)]
+    for i in range(0, N*N):
+        G_maxs[int(i / N)] += G_with_G.x[i]
+        G_prime_maxs[int(i / N)] += G_prime_with_G_prime.x[i]
+    G_with_G_prime = run_LP_with_maxs(G, G_prime, G_maxs=G_maxs, G_prime_maxs=G_prime_maxs)
+    predict_iso = abs(G_with_G_prime.fun - G_with_G.fun) < 0.00001
+    GM = isomorphism.GraphMatcher(G, G_prime)
+    actual_iso = GM.is_isomorphic()
+    if predict_iso == actual_iso:
+        print("Correct!")
+        print(actual_iso)
+    else:
+        print("Incorrect!")
+        print("Actual:")
+        print(actual_iso)
+        print("\nG_with_G:")
+        print(G_with_G)
+        print("\nG_prime_with_G_prime:")
+        print(G_prime_with_G_prime)
+        print("\nG_with_G_prime:")
+        print(G_with_G_prime)
+
