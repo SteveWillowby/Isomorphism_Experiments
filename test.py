@@ -125,16 +125,21 @@ for i in range(1,15):
     while not good:
         # Generate first G
         using_sequence = False
-        sequence = [2, 2, 2, 2, 6, 4, 4, 4, 4]  # Set sequence
-        G=nx.configuration_model(sequence)
+        #sequence = [2, 2, 2, 2, 6, 4, 4, 4, 4]  # Set sequence
+        #G=nx.configuration_model(sequence)
+
+        G=nx.erdos_renyi_graph(10,0.4)
+        #G=nx.watts_strogatz_graph(10,3,0.3)
+        #G=nx.barabasi_albert_graph(10,2)
+
         G=nx.Graph(G)
         G.remove_edges_from(G.selfloop_edges())
         if not is_connected(G):
             print("Bad: G disconnected")
             continue
         good = True
-        # G_prime = make_graph_with_same_degree_dist(G)
-        G_prime = permute_labels_only(G)
+        G_prime = make_graph_with_same_degree_dist(G)
+        # G_prime = permute_labels_only(G)
 
     # Make prediction
     G_with_G = run_LP_with_maxs(G, G)
