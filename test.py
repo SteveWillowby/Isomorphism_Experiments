@@ -74,7 +74,53 @@ def make_graph_with_same_degree_dist(G):
             done = True
     return G_prime
 
-for i in range(1,10):
+# Returns all the data from running the LP
+def run_LP_with_maxs(G, G_prime, G_maxs=None, G_prime_maxs=None, goal_node=None):
+    N = len(G.nodes())
+
+    # Assume weights are indexed by G and then by G_prime, so w_10 is weight from G[1] to G_prime[0]
+    c = [1 for n in range(0, N*N)]
+    if goal_node is not None: # If there's one node (in G, not G_prime) we really want to minimize
+        for i in range(0, N):
+            c[N*goal_node + i] += N*N
+
+    SP = dict(all_pairs_shortest_path_length(G))
+    SP_prime = dict(all_pairs_shortest_path_length(G_prime))
+    A = []
+    b = []
+    for i in range(0, N):
+        for j in range(i, N):
+            for k in range(0, N):
+                for l in range(k, N):
+                    new_constraint = [0 for n in range(0, N*N)] # w_ik and w_jl
+                    new_constraint[N*i + k] = -1
+                    new_constraint[N*j + l] = -1
+                    A.append(new_constraint)
+                    b.append(-abs(SP[i][j] - SP_prime[k][l]))
+                    new_constraint = [0 for n in range(0, N*N)] # w_il and w_jk
+                    new_constraint[N * i + l] = -1
+                    new_constraint[N * j + k] = -1
+                    A.append(new_constraint)
+                    b.append(-abs(SP[i][j] - SP_prime[k][l]))
+
+    if G_maxs is not None:
+        if(len(G_maxs) != N):
+            print("Error! len(G_maxs) != N")
+        for i in range(0, N):
+            new_constraint = [0 if j < N*i or j >= N * (i+1) else 1 for j in range(0, N*N)]
+            A.append(new_constraint)
+            b.append(G_maxs[i])
+    if G_prime_maxs is not None:
+        if (len(G_prime_maxs) != N):
+            print("Error! len(G_prime_maxs) != N")
+        for i in range(0, N):
+            new_constraint = [1 if j % N == i else 0 for j in range(0, N * N)]
+            A.append(new_constraint)
+            b.append(G_maxs[i])
+    return linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":True, "maxiter":N*N*N*N*100})
+
+
+for i in range(1,2):
     print("Creating Pairs of Graphs")
     good = False
     while not good:
@@ -88,5 +134,10 @@ for i in range(1,10):
             print("Bad: G disconnected")
             continue
         good = True
-        G_prime = nx.Graph(make_graph_with_same_degree_dist(G))
-    SP = dict(all_pairs_shortest_path_length(G))
+        G_prime = make_graph_with_same_degree_dist(G)
+    G_with_G = run_LP_with_maxs(G, G)
+    G_prime_with_G_prime = run_LP_with_maxs(G_prime, G_prime)
+    print("\n\nG with G:")
+    print(G_with_G)
+    print("\n\nG_prime with G_prime:")
+    print(G_prime_with_G_prime)
