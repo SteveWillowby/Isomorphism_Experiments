@@ -16,16 +16,6 @@ import numpy as np
 # res = linprog(c, A_ub=A, b_ub=b, options={"disp": True})
 # print(res)
 
-sequence = [5, 5, 4, 4, 3, 3, 2, 2]
-# sequence = nx.random_powerlaw_tree_sequence(100, tries=5000)
-# z=nx.utils.create_degree_sequence(100,powerlaw_sequence)
-G=nx.configuration_model(sequence)
-G=nx.Graph(G)
-G.remove_edges_from(G.selfloop_edges())
-SP = dict(all_pairs_shortest_path_length(G))
-pprint.pprint(SP)
-print(is_connected(G))
-
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
     G_sequence.sort()
@@ -68,7 +58,7 @@ def make_graph_with_same_degree_dist(G):
         if not is_connected(G_prime):
             pass
         elif len(G.edges()) == len(G_prime.edges()):
-            print("Graph creation successful")
+            #print("Graph creation successful")
             done = True
     return G_prime
 
@@ -119,12 +109,12 @@ def run_LP_with_maxs(G, G_prime, G_maxs=None, G_prime_maxs=None, goal_node=None)
 
 
 for i in range(1,15):
-    print("Creating Pairs of Graphs")
+    #print("Creating Pairs of Graphs")
     good = False
     while not good:
         # Generate first G
         using_sequence = False
-        sequence = [5, 5, 4, 4, 3, 3, 2, 2]  # Set sequence
+        sequence = [2, 2, 2, 2, 6, 4, 4, 4, 4]  # Set sequence
         G=nx.configuration_model(sequence)
         G=nx.Graph(G)
         G.remove_edges_from(G.selfloop_edges())
@@ -140,7 +130,7 @@ for i in range(1,15):
     # print("\n\nG_prime with G_prime:")
     # print(G_prime_with_G_prime)
     N = len(G.nodes())
-    G_maxs = [0.01 for n in range(0, N)]
+    G_maxs = [0.01 for n in range(0, N)]  # IMPORTANT: The 0.01 is for slack. It should probably be a function of N.
     G_prime_maxs = [0 for n in range(0, N)]
     for i in range(0, N*N):
         G_maxs[int(i / N)] += G_with_G.x[i]
