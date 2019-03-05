@@ -95,7 +95,8 @@ def run_LP_with_maxs(G, G_prime, G_maxs=None, G_prime_maxs=None, goal_node=None)
         if(len(G_maxs) != N):
             print("Error! len(G_maxs) != N")
         for i in range(0, N):
-            new_constraint = [0 if j < N*i or j >= N * (i+1) else 1 for j in range(0, N*N)]
+            new_constraint = [1 if N*i <= j and j < N * (i+1) else 0 for j in range(0, N*N)]
+            #print(new_constraint)
             A.append(new_constraint)
             b.append(G_maxs[i])
     if G_prime_maxs is not None:
@@ -103,10 +104,20 @@ def run_LP_with_maxs(G, G_prime, G_maxs=None, G_prime_maxs=None, goal_node=None)
             print("Error! len(G_prime_maxs) != N")
         for i in range(0, N):
             new_constraint = [1 if j % N == i else 0 for j in range(0, N * N)]
+            #print(new_constraint)
             A.append(new_constraint)
-            b.append(G_maxs[i])
+            b.append(G_prime_maxs[i])
     return linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
 
+def permute_labels_only(G):
+    N = len(G.nodes())
+    permutation = np.random.permutation([i for i in range(0, N)])
+    G_prime = nx.Graph()
+    for i in range(0, N):
+        G_prime.add_node(i)
+    for edge in G.edges():
+        G_prime.add_edge(permutation[edge[0]], permutation[edge[1]])
+    return G_prime
 
 for i in range(1,15):
     #print("Creating Pairs of Graphs")
@@ -122,26 +133,41 @@ for i in range(1,15):
             print("Bad: G disconnected")
             continue
         good = True
-        G_prime = make_graph_with_same_degree_dist(G)
+        # G_prime = make_graph_with_same_degree_dist(G)
+        G_prime = permute_labels_only(G)
+
+    # Make prediction
     G_with_G = run_LP_with_maxs(G, G)
     G_prime_with_G_prime = run_LP_with_maxs(G_prime, G_prime)
-    # print("\n\nG with G:")
-    # print(G_with_G)
-    # print("\n\nG_prime with G_prime:")
-    # print(G_prime_with_G_prime)
     N = len(G.nodes())
     G_maxs = [0.01 for n in range(0, N)]  # IMPORTANT: The 0.01 is for slack. It should probably be a function of N.
-    G_prime_maxs = [0 for n in range(0, N)]
+    G_prime_maxs = [0.01 for n in range(0, N)]  # IMPORTANT: The 0.01 is for slack. It should probably be a function of N.
     for i in range(0, N*N):
         G_maxs[int(i / N)] += G_with_G.x[i]
         G_prime_maxs[int(i / N)] += G_prime_with_G_prime.x[i]
     G_with_G_prime = run_LP_with_maxs(G, G_prime, G_maxs=G_maxs, G_prime_maxs=G_prime_maxs)
-    predict_iso = abs(G_with_G_prime.fun - G_with_G.fun) < 0.00001
+    predict_iso = G_with_G_prime.status == 0 and abs(G_with_G_prime.fun - G_with_G.fun) < 0.00001
+
+    # Get actual result
     GM = isomorphism.GraphMatcher(G, G_prime)
     actual_iso = GM.is_isomorphic()
+
     if predict_iso == actual_iso:
-        print("Correct!")
+        print("\nCorrect!")
         print(actual_iso)
+        print("G_with_G.fun")
+        print(G_with_G.fun)
+        print("G_with_G.status")
+        print(G_with_G.status)
+        print("G_prime_with_G_prime.fun")
+        print(G_prime_with_G_prime.fun)
+        print("G_prime_with_G_prime.status")
+        print(G_prime_with_G_prime.status)
+        print("G_with_G_prime.status")
+        print(G_with_G_prime.status)
+        print("G_with_G_prime.fun")
+        print(G_with_G_prime.fun)
+        print("")
     else:
         print("Incorrect!")
         print("Actual:")
