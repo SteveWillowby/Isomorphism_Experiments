@@ -1,6 +1,5 @@
 from scipy.optimize import linprog
 import networkx as nx
-import pprint
 from networkx import utils
 from networkx.algorithms.bipartite.generators import configuration_model
 from networkx.algorithms import isomorphism
@@ -164,8 +163,22 @@ def iso_check(G, G_prime):
         return False
 
     # Lastly, do the full operation.
-    #for i in range(0, N):
+    for i in range(0, N):
+        # Measure G with itself where goal is to minimize sum_j w_ij
+        c = goal_vector(N, i)
+        A = AG + A_weight_caps
+        b = bG + [N*N for n in range(0, 2*N)]
+        G_with_G = linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
+        A = AGGP + A_weight_caps
+        b_G1_caps = weight_caps(N, G_with_G)
+        print(b_G1_caps[i])
+        b = bGGP + b_G1_caps + b_G2_caps
+        G_with_G_prime = linprog(c, A_ub=A, b_ub=b, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
+        if G_with_G_prime.status != 0 or abs(G_with_G.fun - G_with_G_prime.fun) > 0.01:
+            print("Fourth check failed.")
+            return False
 
+    # Need to add the reverse direction, but it seems like this is busted.
 
     return True
 
@@ -175,9 +188,9 @@ def old_counter_example():
     for i in range(0, 8):
         G.add_node(i)
         G_prime.add_node(i)
-    for G_edge in [(0, 2), (0, 6), (1, 3), (1, 7), (2, 4), (2, 6), (2, 7), (3, 5), (3, 6), (3, 7), (4, 7), (5, 7), (6, 7)]:
+    for G_edge in [(0, 1), (0, 3), (1, 2), (1, 3), (1, 7), (2, 6), (3, 4), (3, 7), (4, 6), (5, 7)]:
         G.add_edge(G_edge[0], G_edge[1])
-    for G_prime_edge in [(0, 7), (0, 5), (1, 4), (1, 7), (2, 6), (2, 5), (3, 4), (3, 7), (4, 7), (4, 6), (5, 6), (5, 7), (6, 7)]:
+    for G_prime_edge in [(0, 7), (1, 5), (1, 7), (2, 5), (2, 6), (3, 6), (3, 7), (4, 7), (4, 5), (5, 6)]:
         G_prime.add_edge(G_prime_edge[0], G_prime_edge[1])
     return (G, G_prime)
 
@@ -213,7 +226,7 @@ for i in range(1,15):
         G_prime = make_graph_with_same_degree_dist(G)
         # G_prime = permute_labels_only(G)
 
-    #(G, G_prime) = old_counter_example()
+    (G, G_prime) = old_counter_example()
     #print(G.edges())
     #print(G_prime.edges())
     #G_prime = permute_labels_only(G_prime)
