@@ -61,23 +61,24 @@ def make_graph_with_same_degree_dist(G):
             done = True
     return G_prime
 
-def lp_without_maxs_or_goal(N, SPG, SPG_prime):
+def lp_without_maxs_or_goal(N, SPG, SPG_prime, travel_min):
     A = []
     b = []
     for i in range(0, N):
-        for j in range(i, N):
+        for j in range(i + 1, N):
             for k in range(0, N):
-                for l in range(k, N):
-                    new_constraint = [0 for n in range(0, N * N)]  # w_ik and w_jl
-                    new_constraint[N * i + k] = -1
-                    new_constraint[N * j + l] = -1
-                    A.append(new_constraint)
-                    b.append(-abs(SPG[i][j] - SPG_prime[k][l]))
-                    new_constraint = [0 for n in range(0, N * N)]  # w_il and w_jk
-                    new_constraint[N * i + l] = -1
-                    new_constraint[N * j + k] = -1
-                    A.append(new_constraint)
-                    b.append(-abs(SPG[i][j] - SPG_prime[k][l]))
+                for l in range(k + 1, N):
+                    if SPG[i][j] >= travel_min and SPG_prime[k][l] >= travel_min:
+                        new_constraint = [0 for n in range(0, N * N)]  # w_ik and w_jl
+                        new_constraint[N * i + k] = -1
+                        new_constraint[N * j + l] = -1
+                        A.append(new_constraint)
+                        b.append(-abs(SPG[i][j] - SPG_prime[k][l]))
+                        new_constraint = [0 for n in range(0, N * N)]  # w_il and w_jk
+                        new_constraint[N * i + l] = -1
+                        new_constraint[N * j + k] = -1
+                        A.append(new_constraint)
+                        b.append(-abs(SPG[i][j] - SPG_prime[k][l]))
     return (A, b)
 
 def maxs_matrix(N):
@@ -116,17 +117,13 @@ def weight_caps_prime(N, result):
         caps[i % N] += result.x[i]
     return caps
 
-def iso_check(G, G_prime):
-    N = len(G.nodes())
-    SPG = dict(all_pairs_shortest_path_length(G))
-    SPG_prime = dict(all_pairs_shortest_path_length(G_prime))
-
+def check_for_min_travel(N, SPG, SPG_prime, min_travel):
     # First run the graphs against themselves
-    (AG, bG) = lp_without_maxs_or_goal(N, SPG, SPG)
+    (AG, bG) = lp_without_maxs_or_goal(N, SPG, SPG, min_travel)
     c = goal_vector(N)
     G_with_G = linprog(c, A_ub=AG, b_ub=bG, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
 
-    (AG_prime, bG_prime) = lp_without_maxs_or_goal(N, SPG_prime, SPG_prime)
+    (AG_prime, bG_prime) = lp_without_maxs_or_goal(N, SPG_prime, SPG_prime, min_travel)
     G_prime_with_G_prime = linprog(c, A_ub=AG_prime, b_ub=bG_prime, method="interior-point", options={"disp":False, "maxiter":N*N*N*N*100})
 
     # First check: Are sums not equal?
@@ -137,7 +134,7 @@ def iso_check(G, G_prime):
 
     print ("Going on to second round test.")
     # Then run them against each other, holding G's caps from before:
-    (AGGP, bGGP) = lp_without_maxs_or_goal(N, SPG, SPG_prime)
+    (AGGP, bGGP) = lp_without_maxs_or_goal(N, SPG, SPG_prime, min_travel)
     A_weight_caps = maxs_matrix(N)
     A = AGGP + A_weight_caps
     b_G1_caps = weight_caps(N, G_with_G)
@@ -148,7 +145,7 @@ def iso_check(G, G_prime):
     # Second check: Are sums not equal or did it fail??
     if G_with_G_prime.status != 0 or abs(G_with_G.fun - G_with_G_prime.fun) > 0.01:  # TODO: Replace this constant.
         print("Second check failed.")
-        print(G_with_G_prime)
+        #print(G_with_G_prime)
         return False
 
     # Use G_with_G_prime to get caps for G_prime, then see if it can use those with itself.
@@ -161,6 +158,8 @@ def iso_check(G, G_prime):
     if G_prime_with_G_prime.status != 0 or abs(G_with_G.fun - G_prime_with_G_prime.fun) > 0.01:  # TODO: Replace this constant.
         print("Third check failed.")
         return False
+
+    return True #TODO: Remove this line.
 
     # Lastly, do the full operation.
     for i in range(0, N):
@@ -178,8 +177,25 @@ def iso_check(G, G_prime):
             print("Fourth check failed.")
             return False
 
-    # Need to add the reverse direction, but it seems like this is busted.
+    # Need to add the reverse direction.
 
+    return True
+
+def iso_check(G, G_prime):
+    N = len(G.nodes())
+    SPG = dict(all_pairs_shortest_path_length(G))
+    SPG_prime = dict(all_pairs_shortest_path_length(G_prime))
+    longest_sp = 0
+    for i in range(0, N):
+        for j in range(i + 1, N):
+            if SPG[i][j] > longest_sp:
+                longest_sp = SPG[i][j]
+            if SPG_prime[i][j] > longest_sp:
+                longest_sp = SPG_prime[i][j]
+    for min_travel in range(0, longest_sp + 1):
+        print("Round " + str(min_travel))
+        if not check_for_min_travel(N, SPG, SPG_prime, min_travel):
+            return False
     return True
 
 def old_counter_example():
@@ -188,9 +204,9 @@ def old_counter_example():
     for i in range(0, 8):
         G.add_node(i)
         G_prime.add_node(i)
-    for G_edge in [(0, 1), (0, 3), (1, 2), (1, 3), (1, 7), (2, 6), (3, 4), (3, 7), (4, 6), (5, 7)]:
+    for G_edge in [(0, 2), (1, 3), (1, 4), (1, 7), (2, 3), (2, 5), (2, 6), (3, 5), (3, 7), (4, 6), (5, 6)]:
         G.add_edge(G_edge[0], G_edge[1])
-    for G_prime_edge in [(0, 7), (1, 5), (1, 7), (2, 5), (2, 6), (3, 6), (3, 7), (4, 7), (4, 5), (5, 6)]:
+    for G_prime_edge in [(0, 3), (1, 5), (1, 7), (2, 4), (2, 6), (3, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]:
         G_prime.add_edge(G_prime_edge[0], G_prime_edge[1])
     return (G, G_prime)
 
@@ -266,14 +282,9 @@ for i in range(1,15):
         print(G.edges())
         print("G_prime's edges:")
         print(G_prime.edges())
-        # break
-        # G's edges:
-        # [(0, 1), (0, 3), (1, 2), (1, 3), (1, 7), (2, 6), (3, 4), (3, 7), (4, 6), (5, 7)]
-        # G_prime's edges:
-        # [(0, 7), (1, 5), (1, 7), (2, 5), (2, 6), (3, 6), (3, 7), (4, 7), (4, 5), (5, 6)]
-
-        # Or:
-        # G's edges:
-        #[(0, 1), (0, 2), (0, 4), (0, 7), (1, 3), (1, 4), (1, 7), (2, 6), (2, 7), (3, 4), (3, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]
+        break
+        #G's edges:
+        #[(0, 2), (1, 3), (1, 4), (1, 7), (2, 3), (2, 5), (2, 6), (3, 5), (3, 7), (4, 6), (5, 6)]
         #G_prime's edges:
-        #[(0, 5), (0, 7), (1, 7), (1, 4), (1, 3), (2, 4), (2, 5), (2, 6), (2, 7), (3, 6), (3, 5), (3, 4), (4, 7), (5, 7), (5, 6), (6, 7)]
+        #[(0, 3), (1, 5), (1, 7), (2, 4), (2, 6), (3, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]
+
