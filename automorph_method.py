@@ -99,22 +99,3 @@ class CanonicalDescription:
             if label not in other_counts or other_counts[label] != count:
                 return False
         return self.are_sets_to_labels_equal(self.sets_to_labels, other_canonical_description.sets_to_labels)
-
-"""
-G = nx.Graph()
-G.add_node(1)
-G.add_node(2)
-G.add_edge(1, 2)
-G.add_node(3)
-G.add_edge(1, 3)
-G.add_node(4)
-G.add_edge(1, 4)
-G.add_edge(2, 3)
-G.add_node(5)
-G.add_node(6)
-G.add_edge(5, 6)
-test = CanonicalDescription(G)
-print(test.mapping_to_labels)
-print(test.sets_to_labels)
-print(test.is_equal(test))
-"""

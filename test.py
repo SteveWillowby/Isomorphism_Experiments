@@ -7,6 +7,7 @@ from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_pat
 from networkx.algorithms.components import is_connected
 import numpy as np
 from automorph_method import *
+from some_srgs import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -64,7 +65,21 @@ def permute_labels_only(G):
         G_prime.add_edge(permutation[edge[0]], permutation[edge[1]])
     return G_prime
 
-for i in range(1,1000000):
+A1 = graph_from_srg_string(GRAPH_STRING_A1)
+A2 = graph_from_srg_string(GRAPH_STRING_A2)
+A3 = graph_from_srg_string(GRAPH_STRING_A3)
+A4 = graph_from_srg_string(GRAPH_STRING_A4)
+
+print(GRAPH_STRING_A1 == GRAPH_STRING_A2)
+print(GRAPH_STRING_A1 == GRAPH_STRING_A3)
+print(GRAPH_STRING_A1 == GRAPH_STRING_A4)
+print(GRAPH_STRING_A2 == GRAPH_STRING_A3)
+print(GRAPH_STRING_A2 == GRAPH_STRING_A4)
+print(GRAPH_STRING_A3 == GRAPH_STRING_A4)
+
+SRG_COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+
+for i in range(0, len(SRG_COMPARISONS)):
     #print("Creating Pairs of Graphs")
     good = False
     while not good:
@@ -86,14 +101,16 @@ for i in range(1,1000000):
         G_prime = make_graph_with_same_degree_dist(G)
         # G_prime = permute_labels_only(G)
 
-    # (G, G_prime) = old_counter_example()
-    #print(G.edges())
-    #print(G_prime.edges())
-    #G_prime = permute_labels_only(G_prime)
+    (G, G_prime) = SRG_COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
+    print("Starting prediction")
     c_desc_G = CanonicalDescription(G)
+    print("...")
     c_desc_G_prime = CanonicalDescription(G_prime)
+    print("...")
     predict_iso = c_desc_G.is_equal(c_desc_G_prime)
+    print("Got prediction: %s" % predict_iso)
+    print(c_desc_G.mapping_to_labels)
 
     # Get actual result
     GM = isomorphism.GraphMatcher(G, G_prime)
