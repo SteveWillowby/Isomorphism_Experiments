@@ -6,6 +6,7 @@ from networkx.algorithms import isomorphism
 from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
 from networkx.algorithms.components import is_connected
 import numpy as np
+from automorph_method import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -43,8 +44,8 @@ def make_graph_with_same_degree_dist(G):
             G_prime.remove_edges_from(G_prime.selfloop_edges())
             #print("Edges after:")
             #print(G_prime.edges())
-            if not is_connected(G_prime):
-                print("Bad: G_prime disconnected")
+            #if not is_connected(G_prime):
+                #print("Bad: G_prime disconnected")
             tries -= 1
         if not is_connected(G_prime):
             pass
@@ -52,18 +53,6 @@ def make_graph_with_same_degree_dist(G):
             #print("Graph creation successful")
             done = True
     return G_prime
-
-def old_counter_example():
-    G = nx.Graph()
-    G_prime = nx.Graph()
-    for i in range(0, 8):
-        G.add_node(i)
-        G_prime.add_node(i)
-    for G_edge in [(0, 2), (1, 3), (1, 4), (1, 7), (2, 3), (2, 5), (2, 6), (3, 5), (3, 7), (4, 6), (5, 6)]:
-        G.add_edge(G_edge[0], G_edge[1])
-    for G_prime_edge in [(0, 3), (1, 5), (1, 7), (2, 4), (2, 6), (3, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]:
-        G_prime.add_edge(G_prime_edge[0], G_prime_edge[1])
-    return (G, G_prime)
 
 def permute_labels_only(G):
     N = len(G.nodes())
@@ -75,7 +64,7 @@ def permute_labels_only(G):
         G_prime.add_edge(permutation[edge[0]], permutation[edge[1]])
     return G_prime
 
-for i in range(1,15):
+for i in range(1,1000000):
     #print("Creating Pairs of Graphs")
     good = False
     while not good:
@@ -84,8 +73,8 @@ for i in range(1,15):
         #sequence = [2, 2, 2, 2, 6, 4, 4, 4, 4]  # Set sequence
         #G=nx.configuration_model(sequence)
 
-        G=nx.erdos_renyi_graph(8,0.4)
-        #G=nx.watts_strogatz_graph(10,3,0.3)
+        # G=nx.erdos_renyi_graph(100,0.4)
+        G=nx.watts_strogatz_graph(100,3,0.3)
         #G=nx.barabasi_albert_graph(10,2)
 
         G=nx.Graph(G)
@@ -97,11 +86,14 @@ for i in range(1,15):
         G_prime = make_graph_with_same_degree_dist(G)
         # G_prime = permute_labels_only(G)
 
-    (G, G_prime) = old_counter_example()
+    # (G, G_prime) = old_counter_example()
     #print(G.edges())
     #print(G_prime.edges())
     #G_prime = permute_labels_only(G_prime)
-    predict_iso = lp_iso_check(G, G_prime)
+    #predict_iso = lp_iso_check(G, G_prime)
+    c_desc_G = CanonicalDescription(G)
+    c_desc_G_prime = CanonicalDescription(G_prime)
+    predict_iso = c_desc_G.is_equal(c_desc_G_prime)
 
     # Get actual result
     GM = isomorphism.GraphMatcher(G, G_prime)
@@ -110,6 +102,8 @@ for i in range(1,15):
     if predict_iso == actual_iso:
         print("\nCorrect!")
         print(actual_iso)
+        if actual_iso == True:
+            exit(0)
         """print("G_with_G.fun")
         print(G_with_G.fun)
         print("G_with_G.status")
