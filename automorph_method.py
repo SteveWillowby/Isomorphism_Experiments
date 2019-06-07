@@ -2,20 +2,30 @@ import networkx as nx
 
 class CanonicalDescription:
 
-    def __init__(self, G):
+    def __init__(self, G, unique_node=None):
         self.sets_to_labels = {}
         self.label_counts = {}
         self.next_label = 0
-        self.nodes = list(G.nodes)
+        self.nodes = list(G.nodes())
         self.mapping_to_labels = {n: 0 for n in self.nodes}
         self.mapping_to_neighbors = {n: set(G.neighbors(n)) for n in self.nodes}
 
+        if unique_node is not None:
+            self.nodes.sort()
+            new_id = self.nodes[-1] + 1
+            self.nodes.append(new_id)
+            self.mapping_to_labels[new_id] = 0
+            self.mapping_to_neighbors[unique_node].add(new_id)
+            self.mapping_to_neighbors[new_id] = set([unique_node])
+
+        counter = 0
         while True:
             sorted_multisets = self.get_new_id_multisets_in_order()
             new_labels = self.assign_new_labels_for_sorted_multisets(sorted_multisets)
             if self.are_new_labels_effectively_the_same(new_labels):
                 break
             self.mapping_to_labels = new_labels
+            counter += 1
 
     def lexicographic_comparison(self, a, b):
         for i in range(0, min(len(a), len(b))):

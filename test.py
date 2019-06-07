@@ -70,14 +70,22 @@ A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
-print(GRAPH_STRING_A1 == GRAPH_STRING_A2)
-print(GRAPH_STRING_A1 == GRAPH_STRING_A3)
-print(GRAPH_STRING_A1 == GRAPH_STRING_A4)
-print(GRAPH_STRING_A2 == GRAPH_STRING_A3)
-print(GRAPH_STRING_A2 == GRAPH_STRING_A4)
-print(GRAPH_STRING_A3 == GRAPH_STRING_A4)
-
 SRG_COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+
+A2_nodes = list(A2.nodes())
+first_node = A2_nodes.pop()
+print("For node: %s" % first_node)
+first_desc = CanonicalDescription(A2, first_node)
+same = 0
+different = 0
+for node in A2_nodes:
+    next_desc = CanonicalDescription(A2, node)
+    if next_desc.is_equal(first_desc):
+        same += 1
+    else:
+        different += 1
+
+print("Same: %s Different: %s" % (same, different))
 
 for i in range(0, len(SRG_COMPARISONS)):
     #print("Creating Pairs of Graphs")
