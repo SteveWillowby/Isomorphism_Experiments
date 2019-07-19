@@ -72,14 +72,23 @@ A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
 SRG_COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
-A2_nodes = list(A2.nodes())
-first_node = A2_nodes.pop()
-print("For node: %s" % first_node)
-first_desc = CanonicalDescription(A2, first_node)
+A3_nodes = list(A3.nodes())
+first_node = A3_nodes.pop()
+neighbors = list(A3.neighbors(first_node))
+for neighbor in neighbors:
+    A3.remove_edge(first_node, neighbor)
+first_desc = CanonicalDescription(A3, first_node)
+for neighbor in neighbors:
+    A3.add_edge(first_node, neighbor)
 same = 0
 different = 0
-for node in A2_nodes:
-    next_desc = CanonicalDescription(A2, node)
+for node in A3_nodes:
+    neighbors = list(A3.neighbors(node))
+    for neighbor in neighbors:
+        A3.remove_edge(node, neighbor)
+    next_desc = CanonicalDescription(A3)
+    for neighbor in neighbors:
+        A3.add_edge(node, neighbor)
     if next_desc.is_equal(first_desc):
         same += 1
     else:
@@ -112,17 +121,18 @@ for i in range(0, len(SRG_COMPARISONS)):
     (G, G_prime) = SRG_COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = CanonicalDescription(G)
+    c_desc_G = MoreCanonicalDescription(G)
     print("...")
-    c_desc_G_prime = CanonicalDescription(G_prime)
+    c_desc_G_prime = MoreCanonicalDescription(G_prime)
     print("...")
     predict_iso = c_desc_G.is_equal(c_desc_G_prime)
     print("Got prediction: %s" % predict_iso)
-    print(c_desc_G.mapping_to_labels)
+    # print(c_desc_G.mapping_to_labels)
 
     # Get actual result
-    GM = isomorphism.GraphMatcher(G, G_prime)
-    actual_iso = GM.is_isomorphic()
+    # GM = isomorphism.GraphMatcher(G, G_prime)
+    # actual_iso = GM.is_isomorphic()
+    actual_iso = False
 
     if predict_iso == actual_iso:
         print("\nCorrect!")
@@ -156,7 +166,7 @@ for i in range(0, len(SRG_COMPARISONS)):
         print(G.edges())
         print("G_prime's edges:")
         print(G_prime.edges())
-        break
+        # break
         #G's edges:
         #[(0, 2), (1, 3), (1, 4), (1, 7), (2, 3), (2, 5), (2, 6), (3, 5), (3, 7), (4, 6), (5, 6)]
         #G_prime's edges:

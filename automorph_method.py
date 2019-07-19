@@ -4,7 +4,7 @@ class CanonicalDescription:
 
     def __init__(self, G, unique_node=None):
         self.sets_to_labels = {}
-        self.label_counts = {}
+        self.label_counts = {0: 0}
         self.next_label = 0
         self.nodes = list(G.nodes())
         self.mapping_to_labels = {n: 0 for n in self.nodes}
@@ -109,3 +109,29 @@ class CanonicalDescription:
             if label not in other_counts or other_counts[label] != count:
                 return False
         return self.are_sets_to_labels_equal(self.sets_to_labels, other_canonical_description.sets_to_labels)
+
+class MoreCanonicalDescription:
+    
+    def __init__(self, G):
+        self.nodes = list(G.nodes())
+        self.cds = {}
+        for node in self.nodes:
+            neighbors = list(G.neighbors(node))
+            for neighbor in neighbors:
+                G.remove_edge(node, neighbor)
+            self.cds[node] = CanonicalDescription(G)
+            for neighbor in neighbors:
+                G.add_edge(node, neighbor)
+
+    def is_equal(self, other_more_canonical_description):
+        other_nodes_set = set(other_more_canonical_description.nodes)
+        for node in self.nodes:
+            matching_other_node = None
+            for other_node in other_nodes_set:
+                if self.cds[node].is_equal(other_more_canonical_description.cds[other_node]):
+                    matching_other_node = other_node
+                    break
+            if matching_other_node is None:
+                return False
+            other_nodes_set.remove(matching_other_node)
+        return True
