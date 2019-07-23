@@ -57,13 +57,16 @@ def make_graph_with_same_degree_dist(G):
     return G_prime
 
 def permute_labels_only(G):
-    N = len(G.nodes())
+    nodes = list(G.nodes())
+    N = len(nodes)
     permutation = np.random.permutation([i for i in range(0, N)])
     G_prime = nx.Graph()
+    node_to_idx = {}
     for i in range(0, N):
+        node_to_idx[nodes[i]] = i
         G_prime.add_node(i)
     for edge in G.edges():
-        G_prime.add_edge(permutation[edge[0]], permutation[edge[1]])
+        G_prime.add_edge(permutation[node_to_idx[edge[0]]], permutation[node_to_idx[edge[1]]])
     return G_prime
 
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
@@ -71,33 +74,20 @@ A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
-SRG_COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
-A3_nodes = list(A3.nodes())
-first_node = A3_nodes.pop()
-neighbors = list(A3.neighbors(first_node))
-for neighbor in neighbors:
-    A3.remove_edge(first_node, neighbor)
-first_desc = CanonicalDescription(A3, first_node)
-for neighbor in neighbors:
-    A3.add_edge(first_node, neighbor)
-same = 0
-different = 0
-for node in A3_nodes:
-    neighbors = list(A3.neighbors(node))
-    for neighbor in neighbors:
-        A3.remove_edge(node, neighbor)
-    next_desc = CanonicalDescription(A3)
-    for neighbor in neighbors:
-        A3.add_edge(node, neighbor)
-    if next_desc.is_equal(first_desc):
-        same += 1
-    else:
-        different += 1
+base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_0100_a = nx.Graph(base_0100_a)
+base_0100_b = nx.Graph(base_0100_b)
+base_1000_a = nx.Graph(base_1000_a)
+base_1000_b = nx.Graph(base_1000_b)
 
-print("Same: %s Different: %s" % (same, different))
+COMPARISONS = [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
 
-for i in range(0, len(SRG_COMPARISONS)):
+for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
     good = False
     while not good:
@@ -119,7 +109,7 @@ for i in range(0, len(SRG_COMPARISONS)):
         G_prime = make_graph_with_same_degree_dist(G)
         # G_prime = permute_labels_only(G)
 
-    (G, G_prime) = SRG_COMPARISONS[i]
+    (G, G_prime) = COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
     c_desc_G = CanonicalGraph(G)
@@ -131,15 +121,13 @@ for i in range(0, len(SRG_COMPARISONS)):
     # print(c_desc_G.mapping_to_labels)
 
     # Get actual result
-    # GM = isomorphism.GraphMatcher(G, G_prime)
-    # actual_iso = GM.is_isomorphic()
-    actual_iso = False
+    GM = isomorphism.GraphMatcher(G, G_prime)
+    actual_iso = GM.is_isomorphic()
+    # actual_iso = False
 
     if predict_iso == actual_iso:
         print("\nCorrect!")
         print(actual_iso)
-        if actual_iso == True:
-            exit(0)
         """print("G_with_G.fun")
         print(G_with_G.fun)
         print("G_with_G.status")
@@ -162,11 +150,11 @@ for i in range(0, len(SRG_COMPARISONS)):
         print("\nG_prime_with_G_prime:")
         print(G_prime_with_G_prime)
         print("\nG_with_G_prime:")
-        print(G_with_G_prime)"""
+        print(G_with_G_prime)
         print("G's edges:")
         print(G.edges())
         print("G_prime's edges:")
-        print(G_prime.edges())
+        print(G_prime.edges())"""
         # break
         #G's edges:
         #[(0, 2), (1, 3), (1, 4), (1, 7), (2, 3), (2, 5), (2, 6), (3, 5), (3, 7), (4, 6), (5, 6)]
