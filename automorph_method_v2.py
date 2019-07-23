@@ -1,73 +1,162 @@
 import networkx as nx
 
+# This provides a canonical description of a graph with labeled nodes.
 class CanonicalGraph:
 
-    # TODO: Add support for multiple connected components.
-    # use nx.connected_components(G) to get the sets of nodes
-    # TODO: Add this to the graph_comparison function
-    def __init__(self, G):
+    def __init__(self, G, external_labels=None):
         self.G = G
         self.size = len(self.G.nodes())
-        if self.size <= 1:
+        if self.size == 0:
+            return
+        if self.size == 1:
+            if external_labels is not None:
+                if len(external_labels) > 1:
+                    print("EXTREME ERROR -- external_labels should just have 1 item.")
+                for n, l in external_labels.items():
+                    self.single_label = l
+            else:
+                self.single_label = None
             return
 
-        # TODO: Add complement to graph_comparison function
         self.complement = len(self.G.edges()) > (self.size * (self.size - 1)) / 4
         if self.complement:
             self.G = nx.complement(self.G)
 
-        self.sets_to_label_info = {}
-        self.label_counts = {0: 0} # I believe the initial value here does not matter.
-
-        # one_node_graph = nx.Graph()
-        # one_node_graph.add_node(0)
-        self.label_properties = {} # {Label id: CG} where label_graph includes external mappings
-
-        self.next_label = 0
         self.nodes = list(self.G.nodes())
-        self.internal_mapping_to_labels = {n: 0 for n in self.nodes}
-        self.external_mapping_to_labels = {n: 0 for n in self.nodes}
+        if external_labels is not None:
+            self.external_labels = external_labels
+            self.next_label = 0
+            for n, l in external_labels.items():
+                if l > self.next_label:
+                    self.next_label = l  # next item will ultimately be assigned next_label + 1
+        else:
+            self.external_labels = {n: 0 for n in self.nodes}
+            self.next_label = 0
 
-        self.neighborhoods = {n: CanonicalGraph(self.G.subgraph(self.G.neighbors(n)))}
+        self.first_new_label = self.next_label + 1
+
+        self.internal_labels = {n: l for (n, l) in self.external_labels.items()}
+
+        # If there are multiple connected components, just get the subgraphs for those.
+        components_generator = nx.connected_components(self.G)
+        components = []
+        for component in components_generator:
+            components.append(component)
+
+        self.num_components = len(components)
+        if self.num_components > 1:
+            # Subgraphs 
+            self.components_list = []
+            for component in components:
+                node_labels = {n: self.internal_labels[n] for n in component}
+                component_graph = CanonicalGraph(self.G.subgraph(component), node_labels)
+                self.components_list.append(component_graph)
+            self.components_list.sort(cmp=self.graph_comparison)
+            return
+
+        # Otherwise, there's a single component.
+
+        self.label_counts = {}
+        self.label_id_nums = []
+        for node, label in self.internal_labels.items():
+            if label in self.label_counts:
+                self.label_counts[label] += 1
+            else:
+                self.label_counts[label] = 1
+                self.label_id_nums.append(label)
+        self.label_id_nums.sort()
+
+        self.neighborhood_nodes = {n: set(self.G.neighbors(n)) for n in self.nodes}
+        self.neighborhood_subgraphs = {n: self.G.subgraph(self.neighborhood_nodes[n]) for n in self.nodes}
+
+        self.label_graphs = {}
 
         counter = 0
         while True:
-            sorted_multisets = self.get_new_id_multisets_in_order()
-            new_labels = self.assign_new_labels_for_sorted_multisets(sorted_multisets)
-            if self.are_new_labels_effectively_the_same(new_labels):
+            sorted_neighborhoods = self.get_new_sorted_neighborhoods()
+            new_labels = self.assign_new_labels_for_sorted_neighborhoods(sorted_neighborhoods)
+            if counter > 0 and self.are_new_labels_effectively_the_same(new_labels): # Make sure to get label data at least once.
                 break
-            self.mapping_to_labels = new_labels
+            self.internal_labels = new_labels
             counter += 1
 
     # TODO: Confirm this ordering cannot generate cycles of "greater-ness"
     # -1: This graph "smaller"
     # 0:  Isomorphic
     # 1:  This graph "bigger"
-    def graph_comparison(self, graph_b):
+    def graph_comparison(self, graph_a, graph_b):
         # Number of nodes
-        if self.size < graph_b.size:
+        if graph_a.size < graph_b.size:
             return -1
-        if self.size > graph_b.size:
+        if graph_a.size > graph_b.size:
             return 1
-        if self.size <= 1: # Same size and identical graphs
+        if graph_a.size == 0: # Both empty
+            return 0
+        if graph_a.size == 1: # Both single nodes
+            if graph_a.single_label is None and graph_b.single_label is not None:
+                return -1
+            if graph_a.single_label is not None and graph_b.single_label is None:
+                return 1
+            if graph_a.single_label < graph_b.single_label:
+                return -1
+            if graph_a.single_label > graph_b.single_label:
+                return 1
             return 0
 
-        # Number of labels
-        if self.next_label < graph_b.next_label:
+        # Complement flag
+        if (not graph_a.complement) and graph_b.complement:
             return -1
-        if self.next_label > graph_b.next_label:
+        if graph_a.complement and not graph_b.complement:
             return 1
 
-        # Counts of labels
-        for i in range(0, len(self.label_counts)):
-            if self.label_counts[i] > graph_b.label_counts[i]:
+        # Components
+        if graph_a.num_components < graph_b.num_components:
+            return -1
+        if graph_a.num_components > graph_b.num_components:
+            return 1
+        # If there are multiple components, that's all we need to compare.
+        if graph_a.num_components > 1:
+            for i in range(0, graph_a.num_components):
+                comp = self.graph_comparison(graph_a.components_list[i], graph_b.components_list[i])
+                if comp != 0:
+                    return comp
+            return 0
+
+        # Label id nums
+        if graph_a.first_new_label < graph_b.first_new_label:
+            return -1
+        if graph_a.first_new_label > graph_b.first_new_label:
+            return 1
+        if len(graph_a.label_id_nums) < len(graph_b.label_id_nums):
+            return -1
+        if len(graph_a.label_id_nums) > len(graph_b.label_id_nums):
+            return 1
+        for i in range(0, len(graph_a.label_id_nums)):
+            if graph_a.label_id_nums[i] < graph_b.label_id_nums[i]:
                 return -1
-            if self.label_counts[i] < graph_b.label_counts[i]:
+            if graph_a.label_id_nums[i] > graph_b.label_id_nums[i]:
                 return 1
 
+        # Counts of labels
+        for label in graph_a.label_id_nums:
+            if graph_a.label_counts[label] > graph_b.label_counts[label]:
+                return -1
+            if graph_a.label_counts[label] < graph_b.label_counts[label]:
+                return 1
+
+        # Graphs of (new) labels
+        for label in graph_a.label_id_nums:
+            if label >= graph_a.first_new_label:
+                comp = self.graph_comparison(graph_a.label_graphs[label], graph_b.label_graphs[label])
+                if comp != 0:
+                    return comp
+
+        return 0
+
+        """ I don't think this part is necessary.
         # Internal-external assignment matches
-        pairings_lists = [[(self.internal_mapping_to_labels[i], self.external_mapping_to_labels[i]) for i in range(0, self.size)], \
-                          [(graph_b.internal_mapping_to_labels[i], graph_b.external_mapping_to_labels[i]) for i in range(0, graph_b.size)]]
+        pairings_lists = [[(graph_a.internal_labels[i], graph_a.external_labels[i]) for i in range(0, graph_a.size)], \
+                          [(graph_b.internal_labels[i], graph_b.external_labels[i]) for i in range(0, graph_b.size)]]
         pairings_dicts = [{}, {}]
         for i in [0, 1]:
             pairings = pairings_dicts[i]
@@ -89,56 +178,29 @@ class CanonicalGraph:
                 return -1
             if pairings_dicts[0][pairing] > pairings_dicts[1][pairing]:
                 return 1
+        """
 
-        # Graphs of labels
-        for i in range(0, len(self.label_properties)):
-            comp = graph_comparison[self.label_properties[i], graph_b.label_properties[i]]
-            if comp != 0:
-                return comp
-
-        return 0
-
-    def lexicographic_comparison(self, a, b):
-        for i in range(0, min(len(a), len(b))):
-            if a[i] < b[i]:
-                return -1
-            if b[i] < a[i]:
-                return 1
-        if len(a) < len(b):
-            return -1
-        if len(b) < len(a):
-            return 1
-        return 0
-
-    # O(|E|log|E| + |E|*|V|log|V|) = O(|E||V|log|V|)
-    # TODO: Implement a bucket or a radix sort.
-    def get_new_id_multisets_in_order(self):
-        arrays = []
+    def get_new_sorted_neighborhoods(self):
+        labels = []
         for node in self.nodes:
-            s = []
-            for neighbor in self.mapping_to_neighbors[node]:
-                s.append(self.mapping_to_labels[neighbor])
-            s.sort()
-            arrays.append((node, s))
-        arrays.sort(key=(lambda x: x[1]), cmp=self.lexicographic_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
-        return arrays
+            starting_neighbor_labels = {n: self.internal_labels[n] for n in self.neighborhood_nodes[node]}
+            graph = CanonicalGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels)
+            labels.append((node, graph))
+        labels.sort(key=(lambda x: x[1]), cmp=self.graph_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
+        return labels
 
-    # O(|E|)
-    def assign_new_labels_for_sorted_multisets(self, sorted_multisets):
+    def assign_new_labels_for_sorted_neighborhoods(self, sorted_neighborhoods):
         new_labels = {}
-        prev = []
-        for i in range(0, len(sorted_multisets)):
-            current = sorted_multisets[i]
-            if self.lexicographic_comparison(prev, current[1]) != 0:
+        single_node_graph = nx.Graph()
+        single_node_graph.add_node(0)
+        prev = CanonicalGraph(single_node_graph, {0: -1})
+        for i in range(0, len(sorted_neighborhoods)):
+            current = sorted_neighborhoods[i]
+            if self.graph_comparison(prev, current[1]) != 0:
                 self.next_label += 1
                 self.label_counts[self.next_label] = 0
-
-                sets_to_labels = self.sets_to_labels
-                for neighbors_old_label in current[1]:
-                    if neighbors_old_label not in sets_to_labels:
-                        sets_to_labels[neighbors_old_label] = {}
-                    sets_to_labels = sets_to_labels[neighbors_old_label]
-                sets_to_labels["label"] = self.next_label
+                self.label_graphs[self.next_label] = current[1]
+                self.label_id_nums.append(self.next_label)
 
             new_labels[current[0]] = self.next_label
             self.label_counts[self.next_label] += 1
@@ -150,7 +212,7 @@ class CanonicalGraph:
         old_group_identifiers = {}
         new_group_identifiers = {}
         for node in self.nodes:
-            old_label = self.mapping_to_labels[node]
+            old_label = self.internal_labels[node]
             new_label = new_labels[node]
             if old_label not in old_group_identifiers:
                 old_group_identifiers[old_label] = node
@@ -159,24 +221,3 @@ class CanonicalGraph:
             if old_group_identifiers[old_label] != new_group_identifiers[new_label]:
                 return False
         return True
-
-    # TODO: Make this non-recursive
-    def are_sets_to_labels_equal(self, a_set, b_set):
-        if len(a_set) != len(b_set):
-            return False
-        for set_member, value in a_set.items():
-            if set_member not in b_set:
-                return False
-            if set_member == "label":
-                if b_set["label"] != value:
-                    return False
-            elif not self.are_sets_to_labels_equal(a_set[set_member], b_set[set_member]):
-                return False
-        return True
-
-    def is_equal(self, other_canonical_description):
-        other_counts = other_canonical_description.label_counts
-        for label, count in self.label_counts.items():
-            if label not in other_counts or other_counts[label] != count:
-                return False
-        return self.are_sets_to_labels_equal(self.sets_to_labels, other_canonical_description.sets_to_labels)

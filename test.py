@@ -7,6 +7,7 @@ from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_pat
 from networkx.algorithms.components import is_connected
 import numpy as np
 from automorph_method import *
+from automorph_method_v2 import *
 from some_srgs import *
 
 def make_graph_with_same_degree_dist(G):
@@ -121,11 +122,11 @@ for i in range(0, len(SRG_COMPARISONS)):
     (G, G_prime) = SRG_COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = MoreCanonicalDescription(G)
+    c_desc_G = CanonicalGraph(G)
     print("...")
-    c_desc_G_prime = MoreCanonicalDescription(G_prime)
+    c_desc_G_prime = CanonicalGraph(G_prime)
     print("...")
-    predict_iso = c_desc_G.is_equal(c_desc_G_prime)
+    predict_iso = c_desc_G.graph_comparison(c_desc_G, c_desc_G_prime) == 0
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
 
