@@ -42,3 +42,5 @@ for base_or_mult in ["base", "mult"]:
                 else:
                     print("Incorrect!")
                     exit(1)
+
+print("\n Finished Successfully")
