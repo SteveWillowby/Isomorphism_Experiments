@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 from automorph_method_v2 import *
+from Gods_Way_Is_The_Best_Way import *
 from dimacs_to_edge_list import *
 
 def permute_labels_only(G):
@@ -34,8 +35,8 @@ for base_or_mult in ["base", "mult"]:
         for i in range(0, len(graphs)):
             for j in range(i, len(graphs)):
                 print("\n %s vs %s" % (graphs[i][1], graphs[j][1]))
-                G1 = CanonicalGraph(graphs[i][0])
-                G2 = CanonicalGraph(permute_labels_only(graphs[j][0]))
+                G1 = GGraph(graphs[i][0])
+                G2 = GGraph(permute_labels_only(graphs[j][0]))
                 equal = G1.graph_comparison(G1, G2) == 0
                 if (i == j) == equal:
                     print("Correct!")

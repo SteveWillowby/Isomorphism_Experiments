@@ -9,6 +9,7 @@ import numpy as np
 from automorph_method import *
 from automorph_method_v2 import *
 from some_srgs import *
+from Gods_Way_Is_The_Best_Way import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -85,7 +86,7 @@ base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-COMPARISONS = [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
+COMPARISONS += [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
@@ -112,18 +113,18 @@ for i in range(0, len(COMPARISONS)):
     (G, G_prime) = COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = CanonicalGraph(G)
+    c_desc_G = GGraph(G)
     print("...")
-    c_desc_G_prime = CanonicalGraph(G_prime)
+    c_desc_G_prime = GGraph(G_prime)
     print("...")
     predict_iso = c_desc_G.graph_comparison(c_desc_G, c_desc_G_prime) == 0
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
 
     # Get actual result
-    GM = isomorphism.GraphMatcher(G, G_prime)
-    actual_iso = GM.is_isomorphic()
-    # actual_iso = False
+    # GM = isomorphism.GraphMatcher(G, G_prime)
+    # actual_iso = GM.is_isomorphic()
+    actual_iso = False
 
     if predict_iso == actual_iso:
         print("\nCorrect!")
