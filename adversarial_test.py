@@ -1,6 +1,6 @@
 import networkx as nx
 import time
-from Gods_Way_Is_The_Best_Way import *
+from automorph_method_v3 import *
 
 for size_limit in range(10, 21):
     next_size = 4.0

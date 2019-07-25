@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 from automorph_method_v2 import *
-from Gods_Way_Is_The_Best_Way import *
+from automorph_method_v3 import *
 from dimacs_to_edge_list import *
 
 def permute_labels_only(G):

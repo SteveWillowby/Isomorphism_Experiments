@@ -1,5 +1,5 @@
 import networkx as nx
-from Gods_Way_Is_The_Best_Way import *
+from automorph_method_v3 import *
 
 G1 = nx.Graph()
 for i in range(0, 17):
