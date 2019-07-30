@@ -1,0 +1,52 @@
+import networkx as nx
+from is_this_the_one import *
+
+G = nx.Graph()
+
+G.add_node(0)
+Test = NodeViaPaths(G, 0)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")
+
+G.add_node(1)
+Test = NodeViaPaths(G, 0)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")
+
+G.add_edge(0, 1)
+Test = NodeViaPaths(G, 0)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")
+
+G.add_node(2)
+G.add_edge(0, 2)
+Test = NodeViaPaths(G, 0)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")
+
+Test = NodeViaPaths(G, 1)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")
+
+G.add_edge(1, 2)
+Test = NodeViaPaths(G, 0)
+print(Test.layer_nodes)
+print(Test.layer_node_to_class)
+print(Test.layer_next_class)
+print(Test.num_layers)
+print("\n")

@@ -9,7 +9,7 @@ import numpy as np
 from automorph_method import *
 from automorph_method_v2 import *
 from some_srgs import *
-from Gods_Way_Is_The_Best_Way import *
+from is_this_the_one import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -113,11 +113,11 @@ for i in range(0, len(COMPARISONS)):
     (G, G_prime) = COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = GGraph(G)
+    c_desc_G = PathGraph(G)
     print("...")
-    c_desc_G_prime = GGraph(G_prime)
+    c_desc_G_prime = PathGraph(G_prime)
     print("...")
-    predict_iso = c_desc_G.graph_comparison(c_desc_G, c_desc_G_prime) == 0
+    predict_iso = c_desc_G.equal(c_desc_G_prime)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
 
