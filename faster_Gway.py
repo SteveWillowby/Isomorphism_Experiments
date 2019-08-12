@@ -64,8 +64,12 @@ class FasterGGraph:
         if self.nodewise == 1:
 
             # First, get some starting breakdown:
+            if first_layer:
+                print("Diagnostic: Starting quick prep.")
             initial_labels = FasterGGraph(self.G, self.external_labels, was_from_complement=self.complement, nodewise=2)
             initial_labels = initial_labels.internal_labels
+            if first_layer:
+                print("Diagnostic: Starting full prep.")
             initial_labels = FasterGGraph(self.G, initial_labels, was_from_complement=self.complement, nodewise=0)
             initial_labels = initial_labels.internal_labels
 
