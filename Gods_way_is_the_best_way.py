@@ -52,20 +52,27 @@ class GGraph:
                 component_graph = GGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, nodewise=self.nodewise) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
             self.components_list.sort(cmp=self.graph_comparison)
+            
             return
 
         # Otherwise, there's a single component.
 
         if self.nodewise:
-            self.nodewise_graphs = []
+            nodewise_graphs = []
             for node in self.nodes:
                 old_label = self.external_labels[node] # Save node's label
                 self.external_labels[node] = self.first_new_label # Mark node as special
                 if first_layer:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
-                self.nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
+                nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
-            self.nodewise_graphs.sort(cmp=self.graph_comparison)
+            nodewise_graphs.sort(cmp=self.graph_comparison)
+            self.automorphism_orbits = [[nodewise_graphs[0], 1]
+            for i in range(1, len(self.nodes)):
+                if self.graph_comparison(nodewise_graphs[i - 1], nodewise_graphs[i]) == 0:
+                    self.automorphism_orbits[-1][1] += 1
+                else:
+                    self.automorphism_orbits.append([nodewise_graphs[i], 1])
             return
 
         self.label_counts = {}
@@ -154,8 +161,17 @@ class GGraph:
 
         # If nodewise is set, compare the individual graphs.
         if graph_a.nodewise:
-            for i in range(0, len(graph_a.nodewise_graphs)):
-                comp = self.graph_comparison(graph_a.nodewise_graphs[i], graph_b.nodewise_graphs[i])
+            if len(graph_a.automorphism_orbits) < len(graph_b.automorphism_orbits): # Total number of nodes distinct by automorphism
+                return -1
+            if len(graph_a.automorphism_orbits) > len(graph_b.automorphism_orbits):
+                return 1
+            for i in range(0, len(graph_a.automorphism_orbits));
+                if graph_a.automorphism_orbits[i][1] < graph_b.automorphism_orbits[i][1]: # Counts of distinct node types by automorphism
+                    return -1
+                if graph_a.automorphism_orbits[i][1] > graph_b.automorphism_orbits[i][1]:
+                    return 1
+            for i in range(0, len(graph_a.automorphism_orbits)): # Actual definitions of the types of automorphisms
+                comp = self.graph_comparison(graph_a.nodewise_graphs[i][0], graph_b.nodewise_graphs[i][0])
                 if comp != 0:
                     return comp
             return 0
