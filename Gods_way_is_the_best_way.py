@@ -64,10 +64,8 @@ class GGraph:
                 self.external_labels[node] = self.first_new_label # Mark node as special
                 if first_layer:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
-                nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
+                nodewise_graphs.append(GGraph(G, self.external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
-            if first_layer:
-                print(self.graph_comparison(nodewise_graphs[11], nodewise_graphs[12]))
             nodewise_graphs.sort(cmp=self.graph_comparison)
             self.automorphism_orbits = [[nodewise_graphs[0], 1]]
             for i in range(1, len(self.nodes)):
@@ -75,6 +73,8 @@ class GGraph:
                     self.automorphism_orbits[-1][1] += 1
                 else:
                     self.automorphism_orbits.append([nodewise_graphs[i], 1])
+            if first_layer:
+                print("Number of orbits: %s. Occurrences of first orbit: %s." % (len(self.automorphism_orbits), self.automorphism_orbits[0]))
             return
 
         self.label_counts = {}
@@ -209,12 +209,11 @@ class GGraph:
                 if comp != 0:
                     return comp
 
-        return 0
+        # return 0
 
-        """ I don't think this part is necessary.
         # Internal-external assignment matches
-        pairings_lists = [[(graph_a.internal_labels[i], graph_a.external_labels[i]) for i in range(0, graph_a.size)], \
-                          [(graph_b.internal_labels[i], graph_b.external_labels[i]) for i in range(0, graph_b.size)]]
+        pairings_lists = [[(graph_a.internal_labels[graph_a.nodes[i]], graph_a.external_labels[graph_a.nodes[i]]) for i in range(0, graph_a.size)], \
+                          [(graph_b.internal_labels[graph_b.nodes[i]], graph_b.external_labels[graph_b.nodes[i]]) for i in range(0, graph_b.size)]]
         pairings_dicts = [{}, {}]
         for i in [0, 1]:
             pairings = pairings_dicts[i]
@@ -236,7 +235,7 @@ class GGraph:
                 return -1
             if pairings_dicts[0][pairing] > pairings_dicts[1][pairing]:
                 return 1
-        """
+        return 0
 
     def get_new_sorted_neighborhoods(self):
         labels = []

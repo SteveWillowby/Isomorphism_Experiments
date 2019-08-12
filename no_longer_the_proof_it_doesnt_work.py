@@ -40,10 +40,10 @@ G1.add_edge(13,16)
 G2.add_edge(9,16)
 G2.add_edge(12,13)
 
-GG1 = GGraph(G1, first_layer=True)
-GG2 = GGraph(G2, first_layer=True)
+#GG1 = GGraph(G1, first_layer=True)
+#GG2 = GGraph(G2, first_layer=True)
 
-print(GG1.graph_comparison(GG1,GG2))
+#print(GG1.graph_comparison(GG1,GG2))
 
 # Graph 2
 
@@ -83,9 +83,26 @@ G1.add_edge(13,9)
 G2.add_edge(12,0)
 G2.add_edge(12,4)
 G2.add_edge(13,5)
-G2.add_edge(13,6)
+G2.add_edge(13,9)
 
 GG1 = GGraph(G1, first_layer=True)
+label_graphs = [g for l, g in GG1.automorphism_orbits[0][0].label_graphs.items()]
+label_graphs.sort(cmp=GG1.graph_comparison)
+count = 1
+for i in range(0, len(label_graphs)):
+    comp = GG1.graph_comparison(label_graphs[i - 1], label_graphs[i])
+    if comp != 0:
+        count += 1
+print("Unique labels: %s" % count)
+
 GG2 = GGraph(G2, first_layer=True)
 
 print(GG1.graph_comparison(GG1,GG2))
+
+G1 = nx.Graph()
+G1.add_node(0)
+G1.add_node(1)
+G1.add_node(2)
+G1.add_edge(0,1)
+G1.add_edge(0,2)
+GG1 = GGraph(G1, first_layer=True)
