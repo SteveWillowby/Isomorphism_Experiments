@@ -66,6 +66,8 @@ class GGraph:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
                 nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
+            if first_layer:
+                print(self.graph_comparison(nodewise_graphs[11], nodewise_graphs[12]))
             nodewise_graphs.sort(cmp=self.graph_comparison)
             self.automorphism_orbits = [[nodewise_graphs[0], 1]]
             for i in range(1, len(self.nodes)):
