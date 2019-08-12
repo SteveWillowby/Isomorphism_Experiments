@@ -1,6 +1,7 @@
 import networkx as nx
 from automorph_method_v3 import *
 from is_this_the_one import *
+from Gods_way_is_the_best_way import *
 
 G1 = nx.Graph()
 for i in range(0, 17):
@@ -39,11 +40,11 @@ G1.add_edge(13,16)
 G2.add_edge(9,16)
 G2.add_edge(12,13)
 
-GG1 = GGraph(G1)
-GG2 = GGraph(G2)
+GG1 = GGraph(G1, first_layer=True)
+GG2 = GGraph(G2, first_layer=True)
 
-# print(GG1.graph_comparison(GG1,GG2))
-
+print(GG1.graph_comparison(GG1,GG2))
+"""
 Test1 = NodeViaPaths(G1, 0)
 Test2 = NodeViaPaths(G2, 0)
 
@@ -65,3 +66,4 @@ print("\n")
 PG1 = PathGraph(G1)
 PG2 = PathGraph(G2)
 print(PG1.equal(PG2))
+"""

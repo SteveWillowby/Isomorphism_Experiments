@@ -1,12 +1,13 @@
 import networkx as nx
 
 # This provides a canonical description of a graph with labeled nodes.
-class PartialGGraph:
+class GGraph:
 
-    def __init__(self, G, external_labels=None, was_from_complement=False):
+    def __init__(self, G, external_labels=None, was_from_complement=False, nodewise=True, first_layer=False):
         self.complement = was_from_complement
         self.G = G
         self.size = len(self.G.nodes())
+        self.nodewise = nodewise
         if self.size == 0:
             return
         if self.size == 1:
@@ -48,12 +49,24 @@ class PartialGGraph:
             self.components_list = []
             for component in components:
                 node_labels = {n: self.internal_labels[n] for n in component}
-                component_graph = PartialGGraph(self.G.subgraph(component), node_labels) # TODO: Be sure I don't need to pass on self.complement
+                component_graph = GGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, nodewise=self.nodewise) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
             self.components_list.sort(cmp=self.graph_comparison)
             return
 
         # Otherwise, there's a single component.
+
+        if self.nodewise:
+            self.nodewise_graphs = []
+            for node in self.nodes:
+                old_label = self.external_labels[node] # Save node's label
+                self.external_labels[node] = self.first_new_label # Mark node as special
+                if first_layer:
+                    print(self.external_labels)
+                self.nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
+                self.external_labels[node] = old_label # Restore node's label
+            self.nodewise_graphs.sort(cmp=self.graph_comparison)
+            return
 
         self.label_counts = {}
         self.label_id_nums = []
@@ -102,6 +115,12 @@ class PartialGGraph:
         if graph_a.complement and not graph_b.complement:
             return 1
 
+        # Nodewise flag
+        if (not graph_a.nodewise) and graph_b.nodewise:
+            return -1
+        if graph_a.nodewise and not graph_b.nodewise:
+            return 1
+
         # Number of nodes
         if graph_a.size < graph_b.size:
             return -1
@@ -132,6 +151,16 @@ class PartialGGraph:
                 if comp != 0:
                     return comp
             return 0
+
+        # If nodewise is set, compare the individual graphs.
+        if graph_a.nodewise:
+            for i in range(0, len(graph_a.nodewise_graphs)):
+                comp = self.graph_comparison(graph_a.nodewise_graphs[i], graph_b.nodewise_graphs[i])
+                if comp != 0:
+                    return comp
+            return 0
+
+        # Otherwise...
 
         # Label id nums
         if graph_a.first_new_label < graph_b.first_new_label:
@@ -195,7 +224,7 @@ class PartialGGraph:
         labels = []
         for node in self.nodes:
             starting_neighbor_labels = {n: self.internal_labels[n] for n in self.neighborhood_nodes[node]}
-            graph = PartialGGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels, self.neighborhood_complements[node])
+            graph = GGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels, was_from_complement=self.neighborhood_complements[node], nodewise=True)
             labels.append((node, graph))
         labels.sort(key=(lambda x: x[1]), cmp=self.graph_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
         return labels
@@ -204,7 +233,7 @@ class PartialGGraph:
         new_labels = {}
         single_node_graph = nx.Graph()
         single_node_graph.add_node(0)
-        prev = PartialGGraph(single_node_graph, {0: -1})
+        prev = GGraph(single_node_graph, {0: -1})
         for i in range(0, len(sorted_neighborhoods)):
             current = sorted_neighborhoods[i]
             if self.graph_comparison(prev, current[1]) != 0:
