@@ -1,4 +1,3 @@
-from scipy.optimize import linprog
 import networkx as nx
 from networkx import utils
 from networkx.algorithms.bipartite.generators import configuration_model
@@ -11,6 +10,7 @@ from automorph_method_v2 import *
 from some_srgs import *
 from is_this_the_one import *
 from Gods_way_is_the_best_way import *
+from faster_Gway import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -114,9 +114,9 @@ for i in range(0, len(COMPARISONS)):
     (G, G_prime) = COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = GGraph(G, first_layer=True)
+    c_desc_G = FasterGGraph(G, first_layer=True)
     print("...")
-    c_desc_G_prime = GGraph(G_prime, first_layer=True)
+    c_desc_G_prime = FasterGGraph(G_prime, first_layer=True)
     print("...")
     predict_iso = c_desc_G.equal(c_desc_G_prime)
     print("Got prediction: %s" % predict_iso)
