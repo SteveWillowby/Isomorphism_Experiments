@@ -75,7 +75,7 @@ class FasterGGraph:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
 
                 path_labels = nx.single_source_shortest_path_length(G, node) # Do shortest paths computation to speed things up.
-                combined_labels = [[n, (initial_labels[n], path_labels[n])] for n in self.nodes]
+                combined_labels = [[n, (path_labels[n], initial_labels[n])] for n in self.nodes] # NOTE: Having path before initial is necessary.
                 combined_labels.sort(key=(lambda x: x[1]))
 
                 combined_label = 0
@@ -93,18 +93,14 @@ class FasterGGraph:
             sorted_nodewise_graphs.sort(key=(lambda x: x[1]), cmp=self.graph_comparison)
 
             self.automorphism_orbits = [[sorted_nodewise_graphs[0][1], 1]]
-            if first_layer:
-                print("Node: %s | Orbit: %s" % (sorted_nodewise_graphs[0][0], len(self.automorphism_orbits)))
 
             for i in range(1, len(self.nodes)):
                 if self.graph_comparison(sorted_nodewise_graphs[i - 1][1], sorted_nodewise_graphs[i][1]) == 0:
                     self.automorphism_orbits[-1][1] += 1
                 else:
                     self.automorphism_orbits.append([sorted_nodewise_graphs[i][1], 1])
-                if first_layer:
-                    print("Node: %s | Orbit: %s" % (sorted_nodewise_graphs[i][0], len(self.automorphism_orbits)))
             if first_layer:
-                print("Number of orbits: %s. Occurrences of first orbit: %s." % (len(self.automorphism_orbits), self.automorphism_orbits[0]))
+                print("Number of orbits: %s. Occurrences of first orbit: %s." % (len(self.automorphism_orbits), self.automorphism_orbits[0][1]))
 
             return
 
