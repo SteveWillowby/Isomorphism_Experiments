@@ -114,9 +114,9 @@ for i in range(0, len(COMPARISONS)):
     (G, G_prime) = COMPARISONS[i]
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = GGraph(G)
+    c_desc_G = GGraph(G, first_layer=True)
     print("...")
-    c_desc_G_prime = GGraph(G_prime)
+    c_desc_G_prime = GGraph(G_prime, first_layer=True)
     print("...")
     predict_iso = c_desc_G.equal(c_desc_G_prime)
     print("Got prediction: %s" % predict_iso)

@@ -62,7 +62,7 @@ class GGraph:
                 old_label = self.external_labels[node] # Save node's label
                 self.external_labels[node] = self.first_new_label # Mark node as special
                 if first_layer:
-                    print(self.external_labels)
+                    print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
                 self.nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
             self.nodewise_graphs.sort(cmp=self.graph_comparison)
