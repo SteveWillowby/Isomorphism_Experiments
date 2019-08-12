@@ -44,26 +44,48 @@ GG1 = GGraph(G1, first_layer=True)
 GG2 = GGraph(G2, first_layer=True)
 
 print(GG1.graph_comparison(GG1,GG2))
-"""
-Test1 = NodeViaPaths(G1, 0)
-Test2 = NodeViaPaths(G2, 0)
 
-print(Test1.layer_nodes)
-node_to_class = [(c, n) for n, c in Test1.layer_node_to_class[-1].items()]
-node_to_class.sort()
-print(node_to_class)
-print(Test1.layer_next_class[-1])
-print(Test1.num_layers)
-print("\n")
-print(Test2.layer_nodes)
-node_to_class = [(c, n) for n, c in Test2.layer_node_to_class[-1].items()]
-node_to_class.sort()
-print(node_to_class)
-print(Test2.layer_next_class[-1])
-print(Test2.num_layers)
-print("\n")
+# Graph 2
 
-PG1 = PathGraph(G1)
-PG2 = PathGraph(G2)
-print(PG1.equal(PG2))
-"""
+G1 = nx.Graph()
+for i in range(0, 14):
+    G1.add_node(i)
+
+G1.add_edge(0,1)
+G1.add_edge(1,2)
+G1.add_edge(2,3)
+G1.add_edge(3,4)
+
+G1.add_edge(5,6)
+G1.add_edge(6,7)
+G1.add_edge(7,8)
+G1.add_edge(8,9)
+
+G1.add_edge(10,11)
+G1.add_edge(10,12)
+G1.add_edge(10,13)
+G1.add_edge(11,12)
+G1.add_edge(11,13)
+G1.add_edge(12,13)
+
+G1.add_edge(10,0)
+G1.add_edge(10,4)
+G1.add_edge(11,5)
+G1.add_edge(11,9)
+
+G2 = nx.Graph(G1)
+
+G1.add_edge(12,0)
+G1.add_edge(12,5)
+G1.add_edge(13,4)
+G1.add_edge(13,9)
+
+G2.add_edge(12,0)
+G2.add_edge(12,4)
+G2.add_edge(13,5)
+G2.add_edge(13,6)
+
+GG1 = GGraph(G1, first_layer=True)
+GG2 = GGraph(G2, first_layer=True)
+
+print(GG1.graph_comparison(GG1,GG2))

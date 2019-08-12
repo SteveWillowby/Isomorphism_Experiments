@@ -1,4 +1,5 @@
 import networkx as nx
+import functools
 
 # This provides a canonical description of a graph with labeled nodes.
 class GGraph:
@@ -21,6 +22,7 @@ class GGraph:
             return
 
         self.G_comp = nx.complement(self.G) # Do I need this at all?
+        self.graph_comparison_key = functools.cmp_to_key(self.graph_comparison)
 
         self.nodes = list(self.G.nodes())
         if external_labels is not None:
@@ -51,7 +53,7 @@ class GGraph:
                 node_labels = {n: self.internal_labels[n] for n in component}
                 component_graph = GGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, nodewise=self.nodewise) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
-            self.components_list.sort(cmp=self.graph_comparison)
+            self.components_list.sort(key=self.graph_comparison_key)
             
             return
 
@@ -66,7 +68,9 @@ class GGraph:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
                 nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
-            nodewise_graphs.sort(cmp=self.graph_comparison)
+            nodewise_graphs.sort(key=self.graph_comparison_key)
+            self.nodewise_graphs = nodewise_graphs
+            return
             self.automorphism_orbits = [[nodewise_graphs[0], 1]]
             for i in range(1, len(self.nodes)):
                 if self.graph_comparison(nodewise_graphs[i - 1], nodewise_graphs[i]) == 0:
@@ -161,6 +165,12 @@ class GGraph:
 
         # If nodewise is set, compare the individual graphs.
         if graph_a.nodewise:
+            for i in range(0, len(graph_a.nodewise_graphs)):
+                comp = self.graph_comparison(graph_a.nodewise_graphs[i], graph_b.nodewise_graphs[i])
+                if comp != 0:
+                    return comp
+            return 0
+
             if len(graph_a.automorphism_orbits) < len(graph_b.automorphism_orbits): # Total number of nodes distinct by automorphism
                 return -1
             if len(graph_a.automorphism_orbits) > len(graph_b.automorphism_orbits):
@@ -209,40 +219,13 @@ class GGraph:
 
         return 0
 
-        """ I don't think this part is necessary.
-        # Internal-external assignment matches
-        pairings_lists = [[(graph_a.internal_labels[i], graph_a.external_labels[i]) for i in range(0, graph_a.size)], \
-                          [(graph_b.internal_labels[i], graph_b.external_labels[i]) for i in range(0, graph_b.size)]]
-        pairings_dicts = [{}, {}]
-        for i in [0, 1]:
-            pairings = pairings_dicts[i]
-            for pairing in pairings_lists[i]:
-                if pairing in pairings:
-                    pairings[pairing] += 1
-                else:
-                    pairings[pairing] = 1
-
-        unique_pairings = set(pairings_lists[0]) | set(pairings_lists[1])
-        unique_pairings = list(unique_pairings)
-        unique_pairings.sort()
-        for pairing in unique_pairings:
-            if pairing not in pairings_dicts[0]:
-                return -1
-            if pairing not in pairings_dicts[1]:
-                return 1
-            if pairings_dicts[0][pairing] < pairings_dicts[1][pairing]:
-                return -1
-            if pairings_dicts[0][pairing] > pairings_dicts[1][pairing]:
-                return 1
-        """
-
     def get_new_sorted_neighborhoods(self):
         labels = []
         for node in self.nodes:
             starting_neighbor_labels = {n: self.internal_labels[n] for n in self.neighborhood_nodes[node]}
             graph = GGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels, was_from_complement=self.neighborhood_complements[node], nodewise=True)
             labels.append((node, graph))
-        labels.sort(key=(lambda x: x[1]), cmp=self.graph_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
+        labels.sort(key=(lambda x: self.graph_comparison_key(x[1])))
         return labels
 
     def assign_new_labels_for_sorted_neighborhoods(self, sorted_neighborhoods):
