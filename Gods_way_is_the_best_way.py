@@ -67,7 +67,7 @@ class GGraph:
                 nodewise_graphs.append(GGraph(G, external_labels, was_from_complement=self.complement, nodewise=False))
                 self.external_labels[node] = old_label # Restore node's label
             nodewise_graphs.sort(cmp=self.graph_comparison)
-            self.automorphism_orbits = [[nodewise_graphs[0], 1]
+            self.automorphism_orbits = [[nodewise_graphs[0], 1]]
             for i in range(1, len(self.nodes)):
                 if self.graph_comparison(nodewise_graphs[i - 1], nodewise_graphs[i]) == 0:
                     self.automorphism_orbits[-1][1] += 1
@@ -165,7 +165,7 @@ class GGraph:
                 return -1
             if len(graph_a.automorphism_orbits) > len(graph_b.automorphism_orbits):
                 return 1
-            for i in range(0, len(graph_a.automorphism_orbits));
+            for i in range(0, len(graph_a.automorphism_orbits)):
                 if graph_a.automorphism_orbits[i][1] < graph_b.automorphism_orbits[i][1]: # Counts of distinct node types by automorphism
                     return -1
                 if graph_a.automorphism_orbits[i][1] > graph_b.automorphism_orbits[i][1]:
