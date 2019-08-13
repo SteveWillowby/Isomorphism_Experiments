@@ -9,7 +9,9 @@ class FasterGGraph:
     # 0 --> don't collect automorphisms in THIS LAYER
     # 1 --> collect automorphisms and form canonical representation
     # 2 --> don't collect automorphisms in ANY LAYER
-    def __init__(self, G, external_labels=None, was_from_complement=False, nodewise=1, first_layer=False, results_dict=None):
+    def __init__(self, G, external_labels=None, was_from_complement=False, nodewise=1, first_layer=False, results_dict=None, layer=0):
+        print(layer)
+        self.layer = layer
         self.complement = was_from_complement
         self.G = G
         self.size = len(self.G.nodes())
@@ -38,16 +40,18 @@ class FasterGGraph:
         if external_labels is not None:
             self.external_labels = external_labels
 
+            # Unfortunately, the ORDERING of the original labels matters, so we must preserve this ordering unless we do something fancier.
             # Regularize the external labels to be in increasing order starting with the NODE with the smallest id.
             # This is useful for hashing whether this graph problem has effectively been computed before.
-            node_identifiers_for_labels = {}
-            for node in self.nodes:
-                if self.external_labels[node] not in node_identifiers_for_labels:
-                    node_identifiers_for_labels[self.external_labels[node]] = node
-                elif node < node_identifiers_for_labels[self.external_labels[node]]:
-                    node_identifiers_for_labels[self.external_labels[node]] = node
+            # node_identifiers_for_labels = {}
+            #for node in self.nodes:
+            #    if self.external_labels[node] not in node_identifiers_for_labels:
+            #        node_identifiers_for_labels[self.external_labels[node]] = node
+            #    elif node < node_identifiers_for_labels[self.external_labels[node]]:
+            #        node_identifiers_for_labels[self.external_labels[node]] = node
 
-            external_labels_list = [[l, n] for l, n in node_identifiers_for_labels.items()]
+            # external_labels_list = [[l, n] for l, n in node_identifiers_for_labels.items()]
+            external_labels_list = list(set([(l, l) for n, l in self.external_labels.items()]))
             external_labels_list.sort(key=(lambda x: x[1]))
 
             external_labels_replacements = {}
@@ -65,9 +69,11 @@ class FasterGGraph:
         # Before going any further, check to see if this graph has already been computed.
         hash_key = self.computation_id()
         if hash_key in self.results_dict:
+            # print("HIT!!!!!!!!!!!!!!")
             self.__dict__ = self.results_dict[hash_key].__dict__
             self.external_labels = external_labels
             return
+        # print("Miss out of %s" % (len(self.results_dict)))
 
         # The graph has not been computed before.
 
@@ -88,11 +94,11 @@ class FasterGGraph:
             for component in components:
                 node_labels = {n: self.internal_labels[n] for n in component}
                 component_graph = FasterGGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, \
-                    nodewise=self.nodewise, results_dict=self.results_dict) # TODO: Be sure I don't need to pass on self.complement
+                    nodewise=self.nodewise, results_dict=self.results_dict, layer=self.layer+1) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
             self.components_list.sort(cmp=self.graph_comparison)
 
-            # self.results_dict[hash_key] = copy.copy(self)
+            self.results_dict[hash_key] = copy.copy(self)
             return
 
         # Otherwise, there's a single component.
@@ -102,13 +108,15 @@ class FasterGGraph:
             # First, get some starting breakdown:
             if first_layer:
                 print("Diagnostic: Starting quick prep.")
+                print(self.regularized_external_labels)
             initial_labels = FasterGGraph(self.G, self.regularized_external_labels, was_from_complement=self.complement, \
-                nodewise=2, results_dict=self.results_dict)
+                nodewise=2, results_dict=self.results_dict, layer=self.layer+1)
             initial_labels = initial_labels.internal_labels
             if first_layer:
                 print("Diagnostic: Starting full prep.")
+                exit()
             initial_labels = FasterGGraph(self.G, initial_labels, was_from_complement=self.complement, nodewise=0, \
-                results_dict=self.results_dict)
+                results_dict=self.results_dict, layer=self.layer+1)
             initial_labels = initial_labels.internal_labels
 
             nodewise_graphs = {}
@@ -127,7 +135,7 @@ class FasterGGraph:
                         combined_label += 1
                     node_centric_labels[combined_labels[i][0]] = combined_label
                 nodewise_graphs[node] = FasterGGraph(G, node_centric_labels, was_from_complement=self.complement, nodewise=0, \
-                    results_dict=self.results_dict)
+                    results_dict=self.results_dict, layer=self.layer+1)
                 for n, l in node_centric_labels.items():
                     if n != node and l == node_centric_labels[node]:
                         print("MAJOR ERROR!")
@@ -145,7 +153,7 @@ class FasterGGraph:
             if first_layer:
                 print("Number of orbits: %s. Occurrences of first orbit: %s." % (len(self.automorphism_orbits), self.automorphism_orbits[0][1]))
 
-            # self.results_dict[hash_key] = copy.copy(self)
+            self.results_dict[hash_key] = copy.copy(self)
             return
 
             #TODO: Try to make sense of this canonical stuff which I'm not using right now.
@@ -196,7 +204,7 @@ class FasterGGraph:
             # Also using this ordering, we provide automorphism and external node labels
             self.automorphism_and_group_labels = [self.automorphism_and_group_labels[final_node_order[i]] for i in range(0, len(self.nodes))]
 
-            # self.results_dict[hash_key] = copy.copy(self)
+            self.results_dict[hash_key] = copy.copy(self)
             return
 
         self.label_counts = {}
@@ -390,7 +398,7 @@ class FasterGGraph:
         for node in self.nodes:
             starting_neighbor_labels = {n: self.internal_labels[n] for n in self.neighborhood_nodes[node]}
             graph = FasterGGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels, was_from_complement=self.neighborhood_complements[node], \
-                nodewise=use_nodewise, results_dict=self.results_dict)
+                nodewise=use_nodewise, results_dict=self.results_dict,layer=self.layer+1)
             labels.append((node, graph))
         labels.sort(key=(lambda x: x[1]), cmp=self.graph_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
         return labels
@@ -399,7 +407,6 @@ class FasterGGraph:
         new_labels = {}
         single_node_graph = nx.Graph()
         single_node_graph.add_node(0)
-        prev = FasterGGraph(single_node_graph, {0: -1})
         for i in range(0, len(sorted_neighborhoods)):
             current = sorted_neighborhoods[i]
             if self.graph_comparison(prev, current[1]) != 0:
