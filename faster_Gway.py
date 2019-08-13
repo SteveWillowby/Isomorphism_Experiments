@@ -242,6 +242,7 @@ class FasterGGraph:
                 break
             self.internal_labels = new_labels
             counter += 1
+            print(counter)
 
         current_labels = set([l for n, l in self.internal_labels.items()])
         old_labels = set(self.label_id_nums) - current_labels
@@ -409,11 +410,12 @@ class FasterGGraph:
         single_node_graph.add_node(0)
         for i in range(0, len(sorted_neighborhoods)):
             current = sorted_neighborhoods[i]
-            if self.graph_comparison(prev, current[1]) != 0:
+            if i == 0 or self.graph_comparison(prev, current[1]) != 0:
                 self.next_label += 1
                 self.label_counts[self.next_label] = 0
                 self.label_graphs[self.next_label] = current[1]
                 self.label_id_nums.append(self.next_label)
+                prev = current[1]
 
             new_labels[current[0]] = self.next_label
             self.label_counts[self.next_label] += 1
