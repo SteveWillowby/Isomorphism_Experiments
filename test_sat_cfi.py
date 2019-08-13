@@ -3,6 +3,7 @@ import numpy as np
 from automorph_method_v2 import *
 from automorph_method_v3 import *
 from dimacs_to_edge_list import *
+from faster_Gway import *
 
 def permute_labels_only(G):
     nodes = list(G.nodes())
@@ -35,8 +36,8 @@ for base_or_mult in ["base", "mult"]:
         for i in range(0, len(graphs)):
             for j in range(i, len(graphs)):
                 print("\n %s vs %s" % (graphs[i][1], graphs[j][1]))
-                G1 = GGraph(graphs[i][0])
-                G2 = GGraph(permute_labels_only(graphs[j][0]))
+                G1 = FasterGGraph(graphs[i][0], nodewise=2, first_layer=True)
+                G2 = FasterGGraph(permute_labels_only(graphs[j][0]), nodewise=2, first_layer=True)
                 equal = G1.graph_comparison(G1, G2) == 0
                 if (i == j) == equal:
                     print("Correct!")
