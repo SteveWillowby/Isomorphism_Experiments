@@ -18,6 +18,7 @@ def permute_labels_only(G):
         G_prime.add_edge(permutation[node_to_idx[edge[0]]], permutation[node_to_idx[edge[1]]])
     return G_prime
 
+"""
 G1 = nx.Graph()
 for i in range(0, 17):
     G1.add_node(i)
@@ -59,7 +60,7 @@ GG1 = FasterGGraph(G1, first_layer=True)
 GG2 = FasterGGraph(G2, first_layer=True)
 
 print(GG1.graph_comparison(GG1,GG2))
-
+"""
 # Graph 2
 
 G1 = nx.Graph()
