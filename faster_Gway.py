@@ -9,9 +9,7 @@ class FasterGGraph:
     # 0 --> don't collect automorphisms in THIS LAYER
     # 1 --> collect automorphisms and form canonical representation
     # 2 --> don't collect automorphisms in ANY LAYER
-    def __init__(self, G, external_labels=None, was_from_complement=False, nodewise=1, first_layer=False, results_dict=None, layer=0):
-        print(layer)
-        self.layer = layer
+    def __init__(self, G, external_labels=None, was_from_complement=False, nodewise=1, first_layer=False, results_dict=None):
         self.complement = was_from_complement
         self.G = G
         self.size = len(self.G.nodes())
@@ -61,6 +59,10 @@ class FasterGGraph:
             self.regularized_external_labels = {n: external_labels_replacements[l] for n, l in self.external_labels.items()}
             self.next_label = len(external_labels_list) - 1
 
+            # TODO: figure out why the above is not working.
+            self.regularized_external_labels = {n: l for n, l in self.external_labels.items()}
+            self.next_label = max([l for n, l in self.regularized_external_labels.items()])
+
         else:
             self.external_labels = {n: 0 for n in self.nodes}
             self.regularized_external_labels = {n: 0 for n in self.nodes}
@@ -94,7 +96,7 @@ class FasterGGraph:
             for component in components:
                 node_labels = {n: self.internal_labels[n] for n in component}
                 component_graph = FasterGGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, \
-                    nodewise=self.nodewise, results_dict=self.results_dict, layer=self.layer+1) # TODO: Be sure I don't need to pass on self.complement
+                    nodewise=self.nodewise, results_dict=self.results_dict) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
             self.components_list.sort(cmp=self.graph_comparison)
 
@@ -110,13 +112,12 @@ class FasterGGraph:
                 print("Diagnostic: Starting quick prep.")
                 print(self.regularized_external_labels)
             initial_labels = FasterGGraph(self.G, self.regularized_external_labels, was_from_complement=self.complement, \
-                nodewise=2, results_dict=self.results_dict, layer=self.layer+1)
+                nodewise=2, results_dict=self.results_dict)
             initial_labels = initial_labels.internal_labels
             if first_layer:
                 print("Diagnostic: Starting full prep.")
-                exit()
             initial_labels = FasterGGraph(self.G, initial_labels, was_from_complement=self.complement, nodewise=0, \
-                results_dict=self.results_dict, layer=self.layer+1)
+                results_dict=self.results_dict)
             initial_labels = initial_labels.internal_labels
 
             nodewise_graphs = {}
@@ -135,7 +136,7 @@ class FasterGGraph:
                         combined_label += 1
                     node_centric_labels[combined_labels[i][0]] = combined_label
                 nodewise_graphs[node] = FasterGGraph(G, node_centric_labels, was_from_complement=self.complement, nodewise=0, \
-                    results_dict=self.results_dict, layer=self.layer+1)
+                    results_dict=self.results_dict)
                 for n, l in node_centric_labels.items():
                     if n != node and l == node_centric_labels[node]:
                         print("MAJOR ERROR!")
@@ -242,7 +243,6 @@ class FasterGGraph:
                 break
             self.internal_labels = new_labels
             counter += 1
-            print(counter)
 
         current_labels = set([l for n, l in self.internal_labels.items()])
         old_labels = set(self.label_id_nums) - current_labels
@@ -399,7 +399,7 @@ class FasterGGraph:
         for node in self.nodes:
             starting_neighbor_labels = {n: self.internal_labels[n] for n in self.neighborhood_nodes[node]}
             graph = FasterGGraph(self.neighborhood_subgraphs[node], starting_neighbor_labels, was_from_complement=self.neighborhood_complements[node], \
-                nodewise=use_nodewise, results_dict=self.results_dict,layer=self.layer+1)
+                nodewise=use_nodewise, results_dict=self.results_dict)
             labels.append((node, graph))
         labels.sort(key=(lambda x: x[1]), cmp=self.graph_comparison) # O(cmp * |V|log|V|) = O(|E|*|V|log|V|)
         return labels
