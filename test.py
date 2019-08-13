@@ -9,7 +9,6 @@ from automorph_method import *
 from automorph_method_v2 import *
 from automorph_method_v3 import *
 from some_srgs import *
-from is_this_the_one import *
 from Gods_way_is_the_best_way import *
 from faster_Gway import *
 

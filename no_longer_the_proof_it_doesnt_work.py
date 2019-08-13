@@ -1,7 +1,6 @@
 import networkx as nx
 import numpy as np
 from automorph_method_v3 import *
-from is_this_the_one import *
 from Gods_way_is_the_best_way import *
 from faster_Gway import *
 
