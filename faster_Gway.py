@@ -48,19 +48,12 @@ class FasterGGraph:
             #    elif node < node_identifiers_for_labels[self.external_labels[node]]:
             #        node_identifiers_for_labels[self.external_labels[node]] = node
 
-            # external_labels_list = [[l, n] for l, n in node_identifiers_for_labels.items()]
-            external_labels_list = list(set([(l, l) for n, l in self.external_labels.items()]))
-            external_labels_list.sort(key=(lambda x: x[1]))
-
-            external_labels_replacements = {}
-            for i in range(0, len(external_labels_list)):
-                external_labels_replacements[external_labels_list[i][0]] = i
-
-            self.regularized_external_labels = {n: external_labels_replacements[l] for n, l in self.external_labels.items()}
-            self.next_label = len(external_labels_list) - 1
+            external_labels_list = [[n, l] for n, l in self.external_labels.items()]
+            self.relabel_second_items_in_sorted_order(external_labels_list)
+            self.regularized_external_labels = {x[0]: x[1] for x in external_labels_list}
 
             # TODO: figure out why the above is not working.
-            self.regularized_external_labels = {n: l for n, l in self.external_labels.items()}
+            # self.regularized_external_labels = {n: l for n, l in self.external_labels.items()}
             self.next_label = max([l for n, l in self.regularized_external_labels.items()])
 
         else:
@@ -94,13 +87,13 @@ class FasterGGraph:
             # Subgraphs
             self.components_list = []
             for component in components:
-                node_labels = {n: self.internal_labels[n] for n in component}
+                node_labels = {n: self.external_labels[n] for n in component}  # This must use external labels rather than the regularized_external_labels
                 component_graph = FasterGGraph(self.G.subgraph(component), node_labels, was_from_complement=self.complement, \
                     nodewise=self.nodewise, results_dict=self.results_dict) # TODO: Be sure I don't need to pass on self.complement
                 self.components_list.append(component_graph)
             self.components_list.sort(cmp=self.graph_comparison)
 
-            self.results_dict[hash_key] = copy.copy(self)
+            # self.results_dict[hash_key] = copy.copy(self) DONT HASH components or make sure that they get external labels checks right
             return
 
         # Otherwise, there's a single component.
@@ -119,6 +112,9 @@ class FasterGGraph:
             initial_labels = FasterGGraph(self.G, initial_labels, was_from_complement=self.complement, nodewise=0, \
                 results_dict=self.results_dict)
             initial_labels = initial_labels.internal_labels
+            initial_labels_list = [[n, l] for n, l in initial_labels.items()]
+            self.relabel_second_items_in_sorted_order(initial_labels_list)
+            new_initial_labels = {x[0]: x[1] for x in initial_labels_list}
 
             nodewise_graphs = {}
             for node in self.nodes:
@@ -126,15 +122,15 @@ class FasterGGraph:
                     print("Diagnostic: Starting node %s of %s" % (node + 1, len(self.nodes)))
 
                 path_labels = nx.single_source_shortest_path_length(G, node) # Do shortest paths computation to speed things up.
-                combined_labels = [[n, (path_labels[n], initial_labels[n])] for n in self.nodes] # NOTE: Having path before initial is necessary.
-                combined_labels.sort(key=(lambda x: x[1]))
 
-                combined_label = 0
-                node_centric_labels = {combined_labels[0][0]: combined_label}
-                for i in range(1, len(self.nodes)):
-                    if combined_labels[i - 1][1] != combined_labels[i][1]:
-                        combined_label += 1
-                    node_centric_labels[combined_labels[i][0]] = combined_label
+                path_labels_list = [[n, l] for n, l in path_labels.items()]
+                self.relabel_second_items_in_sorted_order(path_labels_list)
+                new_path_labels = {x[0]: x[1] for x in path_labels_list}
+
+                combined_labels = [[n, (new_path_labels[n] * self.size) + new_initial_labels[n]] for n in self.nodes]
+                self.relabel_second_items_in_sorted_order(combined_labels)
+                node_centric_labels = {x[0]: x[1] for x in combined_labels}
+
                 nodewise_graphs[node] = FasterGGraph(G, node_centric_labels, was_from_complement=self.complement, nodewise=0, \
                     results_dict=self.results_dict)
                 for n, l in node_centric_labels.items():
@@ -144,13 +140,13 @@ class FasterGGraph:
             sorted_nodewise_graphs = [[node, nodewise_graphs[node]] for node in self.nodes]
             sorted_nodewise_graphs.sort(key=(lambda x: x[1]), cmp=self.graph_comparison)
 
-            self.automorphism_orbits = [[sorted_nodewise_graphs[0][1], 1]]
+            self.automorphism_orbits = [[sorted_nodewise_graphs[0][1], 1, sorted_nodewise_graphs[0][0]]] # Include a token node so we can access external labels.
 
             for i in range(1, len(self.nodes)):
                 if self.graph_comparison(sorted_nodewise_graphs[i - 1][1], sorted_nodewise_graphs[i][1]) == 0:
                     self.automorphism_orbits[-1][1] += 1
                 else:
-                    self.automorphism_orbits.append([sorted_nodewise_graphs[i][1], 1])
+                    self.automorphism_orbits.append([sorted_nodewise_graphs[i][1], 1, sorted_nodewise_graphs[i][0]])
             if first_layer:
                 print("Number of orbits: %s. Occurrences of first orbit: %s." % (len(self.automorphism_orbits), self.automorphism_orbits[0][1]))
 
@@ -160,9 +156,6 @@ class FasterGGraph:
             #TODO: Try to make sense of this canonical stuff which I'm not using right now.
 
             # Sort nodes by automorphism group and external labels
-
-            if first_layer:
-                print(self.regularized_external_labels)
 
             automorphism_group = 0
             node_ordering = [[sorted_nodewise_graphs[0][0], (automorphism_group, self.regularized_external_labels[sorted_nodewise_graphs[0][0]])]]
@@ -312,6 +305,11 @@ class FasterGGraph:
                     return -1
                 if graph_a.automorphism_orbits[i][1] > graph_b.automorphism_orbits[i][1]:
                     return 1
+            for i in range(0, len(graph_a.automorphism_orbits)):
+                if graph_a.external_labels[graph_a.automorphism_orbits[i][2]] < graph_b.external_labels[graph_b.automorphism_orbits[i][2]]: # Correspondence of orbit to external label
+                    return -1
+                if graph_a.external_labels[graph_a.automorphism_orbits[i][2]] > graph_b.external_labels[graph_b.automorphism_orbits[i][2]]:
+                    return 1
             for i in range(0, len(graph_a.automorphism_orbits)): # Actual definitions of the types of automorphisms
                 comp = self.graph_comparison(graph_a.automorphism_orbits[i][0], graph_b.automorphism_orbits[i][0])
                 if comp != 0:
@@ -440,3 +438,23 @@ class FasterGGraph:
     def computation_id(self):
         regularized_external_labels_list_sorted = [self.regularized_external_labels[n] for n in self.nodes]
         return (self.complement, self.nodewise, tuple(self.nodes), tuple(regularized_external_labels_list_sorted))
+
+    def relabel_second_items_in_sorted_order(self, some_list_of_pairs, comp=None):
+        if comp is None:
+            some_list_of_pairs.sort(key=(lambda x: x[1]))
+        else:
+            some_list_of_pairs.sort(key=(lambda x: x[1]), cmp=comp)
+
+        prev_old_label = some_list_of_pairs[0][1]
+        next_label = 0
+        some_list_of_pairs[0][1] = next_label
+        for i in range(1, len(some_list_of_pairs)):
+            c = False
+            if comp is None:
+                c = some_list_of_pairs[i][1] != prev_old_label
+            else:
+                c = comp(some_list_of_pairs[i][1], prev_old_label) != 0
+            if c:
+                next_label += 1
+            prev_old_label = some_list_of_pairs[i][1]
+            some_list_of_pairs[i][1] = next_label
