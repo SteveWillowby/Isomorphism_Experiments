@@ -127,7 +127,7 @@ for i in range(0, len(COMPARISONS)):
     # Get actual result
     # GM = isomorphism.GraphMatcher(G, G_prime)
     # actual_iso = GM.is_isomorphic()
-    actual_iso = True
+    actual_iso = False
 
     if predict_iso == actual_iso:
         print("\nCorrect!")
