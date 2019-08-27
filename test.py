@@ -12,6 +12,7 @@ from some_srgs import *
 from Gods_way_is_the_best_way import *
 from faster_Gway import *
 from neighbors_revisited import *
+from faster_neighbors_revisited import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -116,9 +117,9 @@ for i in range(0, len(COMPARISONS)):
     # G_prime = permute_labels_only(G)
     #predict_iso = lp_iso_check(G, G_prime)
     print("Starting prediction")
-    c_desc_G = NeighborsRevisited(G)
+    c_desc_G = FasterNeighborsRevisited(G)
     print("...")
-    c_desc_G_prime = NeighborsRevisited(G_prime)
+    c_desc_G_prime = FasterNeighborsRevisited(G_prime)
     print("...")
     predict_iso = c_desc_G == c_desc_G_prime
     print("Got prediction: %s" % predict_iso)
