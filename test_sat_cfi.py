@@ -6,6 +6,7 @@ from dimacs_to_edge_list import *
 from faster_Gway import *
 from neighbors_revisited import *
 from faster_neighbors_revisited import *
+import gc
 
 def permute_labels_only(G):
     nodes = list(G.nodes())
@@ -41,6 +42,7 @@ for base_or_mult in ["base", "mult"]:
                 G1 = FasterNeighborsRevisited(graphs[i][0])
                 G2 = FasterNeighborsRevisited(permute_labels_only(graphs[j][0]))
                 equal = G1 == G2
+                gc.collect()
                 if (i == j) == equal:
                     print("Correct!")
                 else:
