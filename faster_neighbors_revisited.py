@@ -14,10 +14,9 @@ class FasterNeighborsRevisited:
         self.nodes = list(self.G.nodes())
         self.mapping_to_neighbors = {n: set(self.G.neighbors(n)) for n in self.nodes}
         self.internal_labels = {n: external_labels[n] for n in self.nodes}
-        self.next_numeric_label = max([l for n, l in external_labels.items()])
         self.label_definitions = []
-        self.label_counts = []
 
+        """
         if self.nodewise:
             basic_overlay = FasterNeighborsRevisited(self.G, nodewise=False)
             basic_overlay = basic_overlay.internal_labels
@@ -28,6 +27,7 @@ class FasterNeighborsRevisited:
                 combined_labels = {n: path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes}
                 self.nodewise_overlays[node] = FasterNeighborsRevisited(self.G, combined_labels, nodewise=False)
                 self.nodewise_overlays[node] = self.nodewise_overlays[node].internal_labels
+        """
 
         counter = 0
         while True:
@@ -38,14 +38,18 @@ class FasterNeighborsRevisited:
             self.internal_labels = new_labels
             counter += 1
 
+        self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
+        self.label_pairings.sort()
+
     def get_new_ids_in_order(self):
         ids = []
-        if self.nodewise:
-            self.next_numeric_label += 1
         for node in self.nodes:
             if self.nodewise:
-                new_labels = {n: self.nodewise_overlays[node][n] * self.next_numeric_label + self.internal_labels[n] for n in self.nodes}
-                new_labels[node] = self.nodewise_overlays[node][node] * self.next_numeric_label + self.next_numeric_label
+                # new_labels = {n: self.nodewise_overlays[node][n] * self.next_numeric_label + self.internal_labels[n] for n in self.nodes}
+                # new_labels[node] = self.nodewise_overlays[node][node] * self.next_numeric_label + self.next_numeric_label
+                new_labels = {n: self.internal_labels[n] for n in self.nodes}
+                next_numeric_label = max([l for n, l in new_labels.items()]) + 1
+                new_labels[node] = next_numeric_label
                 i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
@@ -58,14 +62,14 @@ class FasterNeighborsRevisited:
     def assign_new_labels_for_sorted_ids(self, sorted_ids):
         new_labels = {}
         prev = None
+        next_numeric_label = -1
+        self.label_definitions = []
         for current in sorted_ids:
             if prev is None or prev != current[1]:
-                self.next_numeric_label += 1
-                self.label_definitions.append((self.next_numeric_label, current[1]))
-                self.label_counts.append(0)
+                next_numeric_label += 1
+                self.label_definitions.append(current[1])
 
-            new_labels[current[0]] = self.next_numeric_label
-            self.label_counts[-1] += 1
+            new_labels[current[0]] = next_numeric_label
             prev = current[1]
         return new_labels
 
@@ -92,21 +96,13 @@ class FasterNeighborsRevisited:
             print("This comparison should never occur!")
             return 1
 
-        if len(self.nodes) < len(other.nodes): # TODO: Make sure this isn't strictly needed and is just here for speed.
+        # Internal-external label matching.
+        if self.label_pairings < other.label_pairings:
             return -1
-        if len(self.nodes) > len(other.nodes):
+        if self.label_pairings > other.label_pairings:
             return 1
 
-        if len(self.label_definitions) < len(other.label_definitions):
-            return -1
-        if len(self.label_definitions) > len(other.label_definitions):
-            return 1
-
-        if self.label_counts < other.label_counts:
-            return -1
-        if self.label_counts > other.label_counts:
-            return 1
-
+        # Actual label definitions.
         for i in range(0, len(self.label_definitions)):
             if self.label_definitions[i][0] < other.label_definitions[i][0]:
                 return -1
