@@ -48,9 +48,9 @@ class FasterNeighborsRevisited:
                 new_labels[node] = self.nodewise_overlays[node][node] * self.next_numeric_label + self.next_numeric_label
                 i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
             else:
-                i = [self.internal_labels[node]] # TODO: Consider whether referencing oneself is necessary.
-                i += [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
-                i.sort()
+                neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
+                neighbors.sort()
+                i = (self.internal_labels[node], neighbors) # TODO: Consider whether referencing oneself is necessary.
             ids.append((node, i))
         ids.sort(key=(lambda x: x[1]))
         return ids
