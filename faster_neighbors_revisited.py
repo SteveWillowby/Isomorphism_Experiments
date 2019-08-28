@@ -27,6 +27,10 @@ class FasterNeighborsRevisited:
             self.nodewise_overlays = {}
             for node in self.nodes:
                 path_labels = nx.single_source_shortest_path_length(self.G, node) # Do shortest paths computation to speed things up.
+                max_dist = max([d for n, d in path_labels.items()]) + 1
+                for n in self.nodes:
+                    if n not in path_labels:
+                        path_labels[n] = max_dist
                 self.nodewise_overlays[node] = {n: path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes}
                 max_value = max([l for n, l in self.nodewise_overlays[node].items()])
                 self.nodewise_overlays[node][node] = max_value + 1
@@ -164,6 +168,7 @@ class FasterNeighborsRevisited:
         return self.full_comparison(other) > -1
 
     def set_canonical_form(self):
+        print(len(self.initial_nodes))
         if len(self.initial_nodes) > 1:
             ordering = [[n, 0] for n in self.initial_nodes]
             self.further_sort(ordering, self.internal_labels)
@@ -187,7 +192,7 @@ class FasterNeighborsRevisited:
                         G_prime.add_edge(ordering[i], ordering[j])
                 if self.initial_G.has_edge(ordering[i], first_node):
                     new_labels[ordering[i]] += max_label
-            print(new_labels)
+            # print(new_labels)
 
             result = FasterNeighborsRevisited(G_prime, new_labels)
             final_node_order = [first_node] + result.final_node_order
