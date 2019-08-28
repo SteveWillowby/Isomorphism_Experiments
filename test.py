@@ -93,6 +93,7 @@ COMPARISONS += [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, p
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
+    """
     good = False
     while not good:
         # Generate first G
@@ -112,10 +113,10 @@ for i in range(0, len(COMPARISONS)):
         good = True
         G_prime = make_graph_with_same_degree_dist(G)
         # G_prime = permute_labels_only(G)
+    """
 
     (G, G_prime) = COMPARISONS[i]
-    # G_prime = permute_labels_only(G)
-    #predict_iso = lp_iso_check(G, G_prime)
+    G_prime = permute_labels_only(G)
     print("Starting prediction")
     c_desc_G = FasterNeighborsRevisited(G)
     print("...")
@@ -124,6 +125,7 @@ for i in range(0, len(COMPARISONS)):
     predict_iso = c_desc_G == c_desc_G_prime
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
+    exit(0)
 
     # Get actual result
     # GM = isomorphism.GraphMatcher(G, G_prime)
