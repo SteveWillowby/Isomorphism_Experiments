@@ -8,12 +8,15 @@ class FasterNeighborsRevisited:
             external_labels = {n: 0 for n in G.nodes()}
 
         if self.nodewise:
+            self.initial_nodes = list(G.nodes())
+            self.initial_G = G
             (self.G, external_labels) = self.expand_graph(G, external_labels)
         else:
             self.G = G
         self.nodes = list(self.G.nodes())
         self.mapping_to_neighbors = {n: set(self.G.neighbors(n)) for n in self.nodes}
         self.internal_labels = {n: external_labels[n] for n in self.nodes}
+        self.external_labels = {n: external_labels[n] for n in self.nodes}
         self.higher_than_any_internal_label = max(len(self.nodes), max([l for n, l in self.internal_labels.items()]) + 1)
         self.label_definitions = []
 
@@ -37,8 +40,11 @@ class FasterNeighborsRevisited:
             self.internal_labels = new_labels
             counter += 1
 
-        self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
-        self.label_pairings.sort()
+        if self.nodewise:
+            self.set_canonical_form()
+        else:
+            self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
+            self.label_pairings.sort()
 
     def get_new_ids_in_order(self):
         ids = []
@@ -93,6 +99,17 @@ class FasterNeighborsRevisited:
             print("This comparison should never occur!")
             return 1
 
+        if self.nodewise:
+            if self.ordered_labels < other.ordered_labels:
+                return -1
+            if self.ordered_labels > other.ordered_labels:
+                return 1
+            if self.matrix < other.matrix:
+                return -1
+            if self.matrix > other.matrix:
+                return 1
+            return 0
+
         # Internal-external label matching.
         if self.label_pairings < other.label_pairings:
             return -1
@@ -145,3 +162,60 @@ class FasterNeighborsRevisited:
 
     def __ge__(self, other):
         return self.full_comparison(other) > -1
+
+    def set_canonical_form(self):
+        ordering = [[n, 0] for n in self.initial_nodes]
+        self.further_sort(ordering, self.internal_labels)
+        ordering = [x[0] for x in ordering]
+
+        first_node = ordering[0]
+        ordering = ordering[1:]
+
+        G_prime = nx.Graph()
+        max_label = 0
+        for node in ordering:
+            G_prime.add_node(node)
+            label = self.internal_labels[node]
+            if label > max_label:
+                max_label = label
+        max_label += 1
+        new_labels = {n: self.internal_labels[n] for n in ordering}
+        for i in range(0, len(ordering)):
+            for j in range(i + 1, len(ordering)):
+                if self.initial_G.has_edge(ordering[i], ordering[j]):
+                    G_prime.add_edge(ordering[i], ordering[j])
+            if self.initial_G.has_edge(ordering[i], first_node):
+                new_labels[ordering[i]] += max_label
+        print(new_labels)
+
+        result = FasterNeighborsRevisited(G_prime, new_labels)
+        final_node_order = [first_node] + result.final_node_order
+
+        matrix = []
+        for i in range(0, len(final_node_order)):
+            next_row = []
+            for j in range(i + 1, len(final_node_order)):
+                if self.initial_G.has_edge(final_node_order[i], final_node_order[j]):
+                    next_row.append(1)
+                else:
+                    next_row.append(0)
+            # print(next_row)
+            matrix.append(next_row)
+
+        self.final_node_order = final_node_order
+        self.ordered_labels = [self.external_labels[n] for n in final_node_order]
+        self.matrix = matrix
+
+    def further_sort(self, initial_list, new_labels):
+        for i in range(0, len(initial_list)):
+            initial_list[i][1] = (initial_list[i][1], new_labels[initial_list[i][0]])
+        initial_list.sort(key=(lambda x: x[1]))
+        next_label = 0
+        prev_value = initial_list[0][1]
+        initial_list[0][1] = next_label
+        for i in range(1, len(initial_list)):
+            current_value = initial_list[i][1]
+            if current_value != prev_value:
+                next_label += 1
+                prev_value = current_value
+            initial_list[i][1] = next_label
