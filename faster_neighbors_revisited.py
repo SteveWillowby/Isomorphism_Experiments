@@ -14,20 +14,19 @@ class FasterNeighborsRevisited:
         self.nodes = list(self.G.nodes())
         self.mapping_to_neighbors = {n: set(self.G.neighbors(n)) for n in self.nodes}
         self.internal_labels = {n: external_labels[n] for n in self.nodes}
+        self.higher_than_any_internal_label = max(len(self.nodes), max([l for n, l in self.internal_labels.items()]) + 1)
         self.label_definitions = []
 
-        """
+        # Give things a head-start with shortest-path values.
         if self.nodewise:
             basic_overlay = FasterNeighborsRevisited(self.G, nodewise=False)
             basic_overlay = basic_overlay.internal_labels
-            overlay_extra = max([l for n, l in basic_overlay.items()]) + 1
             self.nodewise_overlays = {}
             for node in self.nodes:
                 path_labels = nx.single_source_shortest_path_length(self.G, node) # Do shortest paths computation to speed things up.
-                combined_labels = {n: path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes}
-                self.nodewise_overlays[node] = FasterNeighborsRevisited(self.G, combined_labels, nodewise=False)
-                self.nodewise_overlays[node] = self.nodewise_overlays[node].internal_labels
-        """
+                self.nodewise_overlays[node] = {n: path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes}
+                max_value = max([l for n, l in self.nodewise_overlays[node].items()])
+                self.nodewise_overlays[node][node] = max_value + 1
 
         counter = 0
         while True:
@@ -45,12 +44,9 @@ class FasterNeighborsRevisited:
         ids = []
         for node in self.nodes:
             if self.nodewise:
-                # new_labels = {n: self.nodewise_overlays[node][n] * self.next_numeric_label + self.internal_labels[n] for n in self.nodes}
-                # new_labels[node] = self.nodewise_overlays[node][node] * self.next_numeric_label + self.next_numeric_label
-                new_labels = {n: self.internal_labels[n] for n in self.nodes}
-                next_numeric_label = max([l for n, l in new_labels.items()]) + 1
-                new_labels[node] = next_numeric_label
+                new_labels = {n: self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes}
                 i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
+                self.nodewise_overlays[node] = i[1].internal_labels
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
                 neighbors.sort()
@@ -59,6 +55,7 @@ class FasterNeighborsRevisited:
         ids.sort(key=(lambda x: x[1]))
         return ids
 
+    # O(|V'| * cmp_for_sub_labels)
     def assign_new_labels_for_sorted_ids(self, sorted_ids):
         new_labels = {}
         prev = None
@@ -73,7 +70,7 @@ class FasterNeighborsRevisited:
             prev = current[1]
         return new_labels
 
-    # O(|V|)
+    # O(|V'|)
     def are_new_labels_effectively_the_same(self, new_labels):
         old_group_identifiers = {}
         new_group_identifiers = {}
