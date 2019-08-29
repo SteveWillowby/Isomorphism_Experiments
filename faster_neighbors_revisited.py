@@ -56,7 +56,7 @@ class FasterNeighborsRevisited:
             if self.nodewise:
                 new_labels = {n: self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes}
                 i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
-                self.nodewise_overlays[node] = i[2].internal_labels
+                self.nodewise_overlays[node] = i[1].internal_labels
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
                 neighbors.sort()
