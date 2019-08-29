@@ -4,6 +4,7 @@ from networkx.algorithms.bipartite.generators import configuration_model
 from networkx.algorithms import isomorphism
 from networkx.algorithms.components import is_connected
 import numpy as np
+from some_srgs import *
 from faster_neighbors_revisited import *
 
 def make_graph_with_same_degree_dist(G):
