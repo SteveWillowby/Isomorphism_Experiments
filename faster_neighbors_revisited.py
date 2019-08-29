@@ -55,8 +55,8 @@ class FasterNeighborsRevisited:
         for node in self.nodes:
             if self.nodewise:
                 new_labels = {n: self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes}
-                i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
-                self.nodewise_overlays[node] = i[1].internal_labels
+                i = (self.internal_labels[node], 1, FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
+                self.nodewise_overlays[node] = i[2].internal_labels
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
                 neighbors.sort()
@@ -168,36 +168,16 @@ class FasterNeighborsRevisited:
         return self.full_comparison(other) > -1
 
     def set_canonical_form(self):
-        print(len(self.initial_nodes))
-        if len(self.initial_nodes) > 1:
-            ordering = [[n, 0] for n in self.initial_nodes]
-            self.further_sort(ordering, self.internal_labels)
-            ordering = [x[0] for x in ordering]
+        ordering = [[n, 0] for n in self.initial_nodes]
+        self.further_sort(ordering, self.internal_labels)
 
-            first_node = ordering[0]
-            ordering = ordering[1:]
-
-            G_prime = nx.Graph()
-            max_label = 0
-            for node in ordering:
-                G_prime.add_node(node)
-                label = self.internal_labels[node]
-                if label > max_label:
-                    max_label = label
-            max_label += 1
-            new_labels = {n: self.internal_labels[n] for n in ordering}
-            for i in range(0, len(ordering)):
-                for j in range(i + 1, len(ordering)):
-                    if self.initial_G.has_edge(ordering[i], ordering[j]):
-                        G_prime.add_edge(ordering[i], ordering[j])
-                if self.initial_G.has_edge(ordering[i], first_node):
-                    new_labels[ordering[i]] += max_label
-            # print(new_labels)
-
-            result = FasterNeighborsRevisited(G_prime, new_labels)
-            final_node_order = [first_node] + result.final_node_order
-        else:
-            final_node_order = self.initial_nodes
+        final_node_order = [ordering[0][0]]
+        ordering = ordering[1:]
+        for i in range(1, len(self.initial_nodes)):
+            self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
+            final_node_order.append(ordering[0][0])
+            if len(ordering) > 1:
+                ordering = ordering[1:]
 
         matrix = []
         for i in range(0, len(final_node_order)):
@@ -207,7 +187,6 @@ class FasterNeighborsRevisited:
                     next_row.append(1)
                 else:
                     next_row.append(0)
-            # print(next_row)
             matrix.append(next_row)
 
         self.final_node_order = final_node_order
