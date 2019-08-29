@@ -3,7 +3,6 @@ import numpy as np
 from automorph_method_v3 import *
 from Gods_way_is_the_best_way import *
 from faster_Gway import *
-from neighbors_revisited import *
 
 def permute_labels_only(G):
     nodes = list(G.nodes())
@@ -44,15 +43,9 @@ G1.add_edge(11,6)
 G2.add_edge(5,6)
 G2.add_edge(11,0)
 
-NR1 = NeighborsRevisited(G1)
-NR2 = NeighborsRevisited(G2)
-G3 = permute_labels_only(G1)
-NR3 = NeighborsRevisited(G3)
-print(NR1 == NR2)
+GG1 = FasterGGraph(G1, first_layer=True)
+print(GG1.internal_labels)
+GG2 = FasterGGraph(G2, first_layer=True)
+print(GG2.internal_labels)
 
-#GG1 = FasterGGraph(G1, first_layer=True)
-#print(GG1.internal_labels)
-#GG2 = FasterGGraph(G2, first_layer=True)
-#print(GG2.internal_labels)
-
-#print(GG1.graph_comparison(GG1,GG2))
+print(GG1.graph_comparison(GG1,GG2))

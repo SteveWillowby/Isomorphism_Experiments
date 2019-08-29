@@ -14,6 +14,6 @@ for size_limit in range(10, 21):
             # print(len(G.edges()) - (i * (i - 1)) / 4)
 
     start = time.time()
-    GG = GGraph(G)
+    GG = PartialGGraph(G)
     end = time.time()
     print("Size %s: Time: %s" % (size_limit, end - start))
