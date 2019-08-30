@@ -73,10 +73,10 @@ A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
 COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
-base_0100_a = nx.read_adjlist("various_tests/sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
-base_0100_b = nx.read_adjlist("various_tests/sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_a = nx.read_adjlist("various_tests/sat_cfi_dim/sat_cfi_base_1000_a.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_b = nx.read_adjlist("various_tests/sat_cfi_dim/sat_cfi_base_1000_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_b.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_a = nx.Graph(base_0100_a)
 base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
