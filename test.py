@@ -66,12 +66,38 @@ def permute_labels_only(G):
         G_prime.add_edge(permutation[node_to_idx[edge[0]]], permutation[node_to_idx[edge[1]]])
     return G_prime
 
+def peterson_graph():
+    G = nx.Graph()
+    for i in range(0, 10):
+        G.add_node(i)
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 3)
+    G.add_edge(3, 4)
+    G.add_edge(4, 0)
+
+    G.add_edge(0, 5)
+    G.add_edge(1, 6)
+    G.add_edge(2, 7)
+    G.add_edge(3, 8)
+    G.add_edge(4, 9)
+
+    G.add_edge(5, 7)
+    G.add_edge(7, 9)
+    G.add_edge(9, 6)
+    G.add_edge(6, 8)
+    G.add_edge(8, 5)
+
+    return G
+
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
-COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+Pet = peterson_graph()
+
+COMPARISONS = [(Pet, Pet),(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
@@ -109,7 +135,7 @@ for i in range(0, len(COMPARISONS)):
     """
 
     (G, G_prime) = COMPARISONS[i]
-    #G_prime = permute_labels_only(G)
+    G_prime = permute_labels_only(G)
     print("Starting prediction")
     c_desc_G = FasterNeighborsRevisited(G)
     print("...")
