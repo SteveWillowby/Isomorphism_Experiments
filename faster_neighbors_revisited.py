@@ -40,6 +40,8 @@ class FasterNeighborsRevisited:
             sorted_ids = self.get_new_ids_in_order()
             new_labels = self.assign_new_labels_for_sorted_ids(sorted_ids)
             if self.are_new_labels_effectively_the_same(new_labels):
+                if self.nodewise:
+                    print("Took a total of %s rounds to first get the correct labels." % (counter))
                 break
             self.internal_labels = new_labels
             counter += 1
