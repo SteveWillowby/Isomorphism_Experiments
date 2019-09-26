@@ -16,13 +16,16 @@ class FasterNeighborsRevisited:
         self.nodes = list(self.G.nodes())
         self.mapping_to_neighbors = {n: set(self.G.neighbors(n)) for n in self.nodes}
         self.internal_labels = {n: external_labels[n] for n in self.nodes}
+        #if self.nodewise: # Somehow adding this causes a bug. ???????? Investigate
+        #    most_basic_overlay = FasterNeighborsRevisited(self.G, external_labels, nodewise=False)
+        #    self.internal_labels = most_basic_overlay.internal_labels
         self.external_labels = {n: external_labels[n] for n in self.nodes}
         self.higher_than_any_internal_label = max(len(self.nodes), max([l for n, l in self.internal_labels.items()]) + 1)
         self.label_definitions = []
 
         # Give things a head-start with shortest-path values.
         if self.nodewise:
-            basic_overlay = FasterNeighborsRevisited(self.G, nodewise=False)
+            basic_overlay = FasterNeighborsRevisited(self.G, external_labels, nodewise=False)
             basic_overlay = basic_overlay.internal_labels
             self.nodewise_overlays = {}
             for node in self.nodes:
