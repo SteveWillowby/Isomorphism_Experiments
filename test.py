@@ -6,6 +6,7 @@ from networkx.algorithms.components import is_connected
 import numpy as np
 from some_srgs import *
 from faster_neighbors_revisited import *
+from miyazaki_graphs import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -96,8 +97,13 @@ A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
 Pet = peterson_graph()
+M2 = miyazaki_graph(2)
+M3 = miyazaki_graph(3)
+M4 = miyazaki_graph(4)
+M5 = miyazaki_graph(5)
+M10 = miyazaki_graph(10)
 
-COMPARISONS = [(Pet, Pet),(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
