@@ -157,6 +157,45 @@ class FasterNeighborsRevisited:
 
         return (new_G, new_labels)
 
+    def fancy_expand_graph(self, G, external_labels):
+        expanded_edge_label = max([l for n, l in external_labels.items()]) + 1
+        new_G = nx.Graph()
+        new_labels = {}
+        node_list = list(G.nodes())
+        node_list.sort()
+        next_node_label = node_list[-1]
+        for node in node_list:
+            new_G.add_node(node)
+            new_labels[node] = external_labels[node]
+        a_triangle = False
+        a_non_triangle = False
+        for edge in G.edges():
+            triangle = False
+            for n1 in G.neighbors(edge[0]):
+                if n1 in G.neighbors(edge[1]):
+                    triangle = True
+                    break
+            if triangle:
+                a_triangle = True
+                next_node_label += 1
+                new_G.add_node(next_node_label)
+                new_G.add_edge(edge[0], next_node_label)
+                new_G.add_edge(edge[1], next_node_label)
+                new_labels[next_node_label] = expanded_edge_label
+            else:
+                a_non_triangle = True
+                new_G.add_edge(edge[0], edge[1])
+        if self.nodewise:
+            if a_non_triangle:
+                if a_triangle:
+                    print("Both kinds!")
+                else:
+                    print("All non-triangles")
+            else:
+                print("All triangles")
+
+        return (new_G, new_labels)
+
     def __eq__(self, other):
         return self.full_comparison(other) == 0
 
