@@ -2,7 +2,7 @@ import networkx as nx
 
 class FasterNeighborsRevisited:
 
-    def __init__(self, G, external_labels=None, nodewise=True):
+    def __init__(self, G, external_labels=None, nodewise="Master"):
         self.nodewise = nodewise
         if external_labels is None:
             external_labels = {n: 0 for n in G.nodes()}
@@ -27,6 +27,7 @@ class FasterNeighborsRevisited:
         if self.nodewise:
             basic_overlay = FasterNeighborsRevisited(self.G, external_labels, nodewise=False)
             basic_overlay = basic_overlay.internal_labels
+            # print(self.external_labels)
             self.nodewise_overlays = {}
             for node in self.nodes:
                 path_labels = nx.single_source_shortest_path_length(self.G, node) # Do shortest paths computation to speed things up.
@@ -35,21 +36,26 @@ class FasterNeighborsRevisited:
                     if n not in path_labels:
                         path_labels[n] = max_dist
                 self.nodewise_overlays[node] = {n: path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes}
+                #if node == 0:
+                #    print(self.nodewise_overlays)
                 max_value = max([l for n, l in self.nodewise_overlays[node].items()])
                 self.nodewise_overlays[node][node] = max_value + 1
+                self.nodewise_overlays[node] = {n: self.external_labels[n] for n in self.nodes} # Undo all the above.
+                self.nodewise_overlays[node][node] = max_value + 1
+                # print(self.nodewise_overlays[node])
 
         counter = 0
         while True:
             sorted_ids = self.get_new_ids_in_order()
             new_labels = self.assign_new_labels_for_sorted_ids(sorted_ids)
             if self.are_new_labels_effectively_the_same(new_labels):
-                if self.nodewise:
+                if self.nodewise == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
                 break
             self.internal_labels = new_labels
             counter += 1
 
-        if self.nodewise:
+        if self.nodewise == "Master":
             self.set_canonical_form()
         else:
             self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
@@ -114,8 +120,20 @@ class FasterNeighborsRevisited:
             if self.ordered_labels > other.ordered_labels:
                 return 1
             if self.matrix < other.matrix:
+                for i in range(0, len(self.matrix)):
+                    if self.matrix[i] != other.matrix[i]:
+                        print("%d:" % (i+1))
+                        print(self.matrix[i])
+                        print(other.matrix[i])
+                        print("---")
                 return -1
             if self.matrix > other.matrix:
+                for i in range(0, len(self.matrix)):
+                    if self.matrix[i] != other.matrix[i]:
+                        print("%d:" % (i+1))
+                        print(self.matrix[i])
+                        print(other.matrix[i])
+                        print("---")
                 return 1
             return 0
 
@@ -214,14 +232,30 @@ class FasterNeighborsRevisited:
     def set_canonical_form(self):
         ordering = [[n, 0] for n in self.initial_nodes]
         self.further_sort(ordering, self.internal_labels)
+        print("Initial Ordering:")
+        print(ordering)
 
         final_node_order = [ordering[0][0]]
         ordering = ordering[1:]
         for i in range(1, len(self.initial_nodes)):
-            self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
+            # New:
+            if len(ordering) > 1 and ordering[0][1] == ordering[1][1]:
+                new_labels = {n[0]: n[1] + len(final_node_order) for n in ordering}
+                for j in range(0, len(final_node_order)):
+                    new_labels[final_node_order[j]] = j
+                more_refined = FasterNeighborsRevisited(self.initial_G, external_labels=new_labels, nodewise="Servant")
+                self.further_sort(ordering, more_refined.internal_labels)
+                print(ordering)
+            # Old:
+            # self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
+            # print(ordering)
             final_node_order.append(ordering[0][0])
             if len(ordering) > 1:
+                if ordering[0][1] == ordering[1][1]:
+                    print("Chose the %dth node with a tie (1-indexed)." % (i+1))
                 ordering = ordering[1:]
+        print("The very final node ordering is:")
+        print(final_node_order)
 
         matrix = []
         for i in range(0, len(final_node_order)):

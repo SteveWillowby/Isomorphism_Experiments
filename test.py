@@ -6,6 +6,7 @@ from networkx.algorithms.components import is_connected
 import numpy as np
 from some_srgs import *
 from faster_neighbors_revisited import *
+from neighbors_revisited import *
 from miyazaki_graphs import *
 
 def make_graph_with_same_degree_dist(G):
@@ -58,6 +59,7 @@ def permute_labels_only(G):
     nodes = list(G.nodes())
     N = len(nodes)
     permutation = np.random.permutation([i for i in range(0, N)])
+    print(permutation)
     G_prime = nx.Graph()
     node_to_idx = {}
     for i in range(0, N):
@@ -115,7 +117,7 @@ base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-COMPARISONS += [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
+# COMPARISONS += [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
