@@ -59,7 +59,7 @@ def permute_labels_only(G):
     nodes = list(G.nodes())
     N = len(nodes)
     permutation = np.random.permutation([i for i in range(0, N)])
-    print(permutation)
+    # print(permutation)
     G_prime = nx.Graph()
     node_to_idx = {}
     for i in range(0, N):

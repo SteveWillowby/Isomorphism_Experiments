@@ -232,30 +232,48 @@ class FasterNeighborsRevisited:
     def set_canonical_form(self):
         ordering = [[n, 0] for n in self.initial_nodes]
         self.further_sort(ordering, self.internal_labels)
-        print("Initial Ordering:")
-        print(ordering)
+        # print("Initial Ordering:")
+        # print(ordering)
 
         final_node_order = [ordering[0][0]]
         ordering = ordering[1:]
         for i in range(1, len(self.initial_nodes)):
-            # New:
-            if len(ordering) > 1 and ordering[0][1] == ordering[1][1]:
+            selected_index = 0
+
+            # FROM HERE[A]....
+            self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
+
+            while selected_index < len(ordering):
+                if selected_index + 1 < len(ordering):
+                    if ordering[selected_index][1] == ordering[selected_index + 1][1]:
+                        next_idx = selected_index + 1
+                        while next_idx < len(ordering) and ordering[selected_index][1] == ordering[next_idx][1]:
+                            next_idx += 1
+                        selected_index = next_idx
+                    else:
+                        break
+                else:
+                    break
+            # print("Selected index is %d" % selected_index)
+            # ....TO HERE[A] is all code to make things faster. It's not strictly necessary.
+
+            #if len(ordering) > 1 and ordering[0][1] == ordering[1][1]:
+            if selected_index >= len(ordering) or (selected_index + 1 < len(ordering) and ordering[selected_index][1] == ordering[selected_index + 1][1]):
                 new_labels = {n[0]: n[1] + len(final_node_order) for n in ordering}
                 for j in range(0, len(final_node_order)):
                     new_labels[final_node_order[j]] = j
                 more_refined = FasterNeighborsRevisited(self.initial_G, external_labels=new_labels, nodewise="Servant")
                 self.further_sort(ordering, more_refined.internal_labels)
-                print(ordering)
-            # Old:
-            # self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
-            # print(ordering)
-            final_node_order.append(ordering[0][0])
+                selected_index = 0
+                # print(ordering)
+
+            final_node_order.append(ordering[selected_index][0])
             if len(ordering) > 1:
-                if ordering[0][1] == ordering[1][1]:
+                if selected_index + 1 < len(ordering) and ordering[selected_index][1] == ordering[selected_index + 1][1]:
                     print("Chose the %dth node with a tie (1-indexed)." % (i+1))
-                ordering = ordering[1:]
-        print("The very final node ordering is:")
-        print(final_node_order)
+                ordering.pop(selected_index)
+        # print("The very final node ordering is:")
+        # print(final_node_order)
 
         matrix = []
         for i in range(0, len(final_node_order)):
