@@ -106,7 +106,7 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 
 COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10)]
-COMPARISONS += [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)

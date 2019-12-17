@@ -81,11 +81,11 @@ class FasterNeighborsRevisited:
         new_labels = {}
         prev = None
         next_numeric_label = -1
-        self.label_definitions = []
+        self.label_definitions.append([])
         for current in sorted_ids:
             if prev is None or prev != current[1]:
                 next_numeric_label += 1
-                self.label_definitions.append(current[1])
+                self.label_definitions[-1].append(current[1])
 
             new_labels[current[0]] = next_numeric_label
             prev = current[1]
@@ -143,16 +143,26 @@ class FasterNeighborsRevisited:
         if self.label_pairings > other.label_pairings:
             return 1
 
+        if len(self.label_definitions) < len(other.label_definitions):
+            return -1
+        if len(self.label_definitions) > len(other.label_definitions):
+            return 1
+
         # Actual label definitions.
-        for i in range(0, len(self.label_definitions)):
-            if self.label_definitions[i][0] < other.label_definitions[i][0]:
+        for r in range(0, len(self.label_definitions)):
+            if len(self.label_definitions[r]) < len(other.label_definitions[r]):
                 return -1
-            if self.label_definitions[i][0] > other.label_definitions[i][0]:
+            if len(self.label_definitions[r]) > len(other.label_definitions[r]):
                 return 1
-            if self.label_definitions[i][1] < other.label_definitions[i][1]:
-                return -1
-            if self.label_definitions[i][1] > other.label_definitions[i][1]:
-                return 1
+            for i in range(0, len(self.label_definitions[r])):
+                if self.label_definitions[r][i][0] < other.label_definitions[r][i][0]:
+                    return -1
+                if self.label_definitions[r][i][0] > other.label_definitions[r][i][0]:
+                    return 1
+                if self.label_definitions[r][i][1] < other.label_definitions[r][i][1]:
+                    return -1
+                if self.label_definitions[r][i][1] > other.label_definitions[r][i][1]:
+                    return 1
 
         return 0
 
