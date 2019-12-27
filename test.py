@@ -8,6 +8,7 @@ from some_srgs import *
 from faster_neighbors_revisited import *
 from neighbors_revisited import *
 from miyazaki_graphs import *
+from paths import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -98,6 +99,8 @@ A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
 
+# test = PathSteps(A2)
+
 Pet = peterson_graph()
 M2 = miyazaki_graph(2)
 M3 = miyazaki_graph(3)
@@ -144,7 +147,7 @@ for i in range(0, len(COMPARISONS)):
     """
 
     (G, G_prime) = COMPARISONS[i]
-    G_prime = permute_labels_only(G)
+    # G_prime = permute_labels_only(G)
     print("Starting prediction")
     c_desc_G = FasterNeighborsRevisited(G)
     print("...")
