@@ -147,13 +147,14 @@ for i in range(0, len(COMPARISONS)):
     """
 
     (G, G_prime) = COMPARISONS[i]
-    # G_prime = permute_labels_only(G)
-    print("Starting prediction")
-    c_desc_G = FasterNeighborsRevisited(G)
-    print("...")
-    c_desc_G_prime = FasterNeighborsRevisited(G_prime)
-    print("...")
-    predict_iso = c_desc_G == c_desc_G_prime
+    G_prime = permute_labels_only(G)
+    #print("Starting prediction")
+    #c_desc_G = FasterNeighborsRevisited(G)
+    #print("...")
+    #c_desc_G_prime = FasterNeighborsRevisited(G_prime)
+    #print("...")
+    #predict_iso = c_desc_G == c_desc_G_prime
+    predict_iso = paths_comparison(G, G_prime)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
 

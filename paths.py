@@ -1,24 +1,132 @@
 import networkx as nx
 
-class PathsMethod:
+def further_sort_by(l, d):
+    for i in range(0, len(l)):
+        l[i] = ((l[i][0], d[l[i][1]]), l[i][1])
+    l.sort()
+    new_id = 0
+    prev_label = l[0][0]
+    l[0] = (0, l[0][1])
+    for i in range(1, len(l)):
+        if l[i][0] != prev_label:
+            new_id += 1
+            prev_label = l[i][0]
+        l[i] = (new_id, l[i][1])
 
-    def __init__(self, G1, coloring, paths=None):
-        self.paths = paths
-        if self.paths is None:
-            self.paths = PathSteps(G)
+def paths_comparison(G1, G2):
+    if len(G1.nodes()) != len(G2.nodes()):
+        print("Wat")
+        return False
+    if len(G1.edges()) != len(G2.edges()):
+        print("Wat 2")
+        return False
+    G1_nodes = set(G1.nodes())
+    G2_nodes = set(G2.nodes())
+    G1_paths = PathSteps(G1)
+    G2_paths = PathSteps(G2)
+    G1_done = False
+    G2_done = False
+    completed_iterations = 0
+    G1_edge_types = [(0, (s, t)) for (s, t) in G1.edges()] + [(0, (t, s)) for (s, t) in G1.edges()]
+    G2_edge_types = [(0, (s, t)) for (s, t) in G2.edges()] + [(0, (t, s)) for (s, t) in G2.edges()]
+    G1_coloring = [(0, n) for n in G1_nodes]
+    G2_coloring = [(0, n) for n in G2_nodes]
+    #self.steps = {}
+    while (not G1_done) and (not G2_done):
+        G1_done = G1_paths.compute_next_iteration()
+        G2_done = G2_paths.compute_next_iteration()
+        completed_iterations += 1
+        G1_latest_paths = {n: G1_paths.access(completed_iterations, n, []) for n in G1_nodes}
+        G2_latest_paths = {n: G2_paths.access(completed_iterations, n, []) for n in G2_nodes}
+        further_sort_by(G1_coloring, G1_latest_paths)
+        further_sort_by(G2_coloring, G2_latest_paths)
+        for i in range(0, len(G1_coloring)): # TODO: Make this occur partway through the further refinement.
+            if G1_coloring[i][0] != G2_coloring[i][0]:
+                print("Color Check A Failed!")
+                return False
+        G1_latest_steps = {}
+        for i in range(0, len(G1_edge_types)):
+            (s, t) = G1_edge_types[i][1]
+            if (s, t) in G1_paths.steps[completed_iterations]:
+                G1_latest_steps[(s, t)] = G1_paths.steps[completed_iterations][(s, t)]
+            else:
+                G1_latest_steps[(s, t)] = 0
+        further_sort_by(G1_edge_types, G1_latest_steps)
+        G2_latest_steps = {}
+        for i in range(0, len(G2_edge_types)):
+            (s, t) = G2_edge_types[i][1]
+            if (s, t) in G2_paths.steps[completed_iterations]:
+                G2_latest_steps[(s, t)] = G2_paths.steps[completed_iterations][(s, t)]
+            else:
+                G2_latest_steps[(s, t)] = 0
+        further_sort_by(G2_edge_types, G2_latest_steps)
+        for i in range(0, len(G1_edge_types)): # TODO: Make this occur partway through the further refinement.
+            if G1_edge_types[i][0] != G2_edge_types[i][0]:
+                print("Paths Check A Failed!")
+                return False
+
+        G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
+        G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        further_sort_by(G1_coloring, G1_WL_colors.coloring)
+        further_sort_by(G2_coloring, G2_WL_colors.coloring)
+        for i in range(0, len(G1_coloring)): # TODO: Make this occur partway through the further refinement.
+            if G1_coloring[i][0] != G2_coloring[i][0]:
+                print("Color Check B Failed!")
+                return False
+
+        G1_partial_canon = FlimsyCanonicalizer(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
+        G2_partial_canon = FlimsyCanonicalizer(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        if G1_partial_canon.matrix == G2_partial_canon.matrix:
+            return True
+
+    print("Finished without Canonicalizing As Same!")
+    return False
+
 
 class FlimsyCanonicalizer:
 
-    def __init__(self, G, init_coloring):
-        pass
+    def __init__(self, G, init_coloring, edge_types):
+        nodes = list(G.nodes())
+        sorted_color_node_pairs = [(init_coloring[n], n) for n in nodes]
+        sorted_color_node_pairs.sort()
+        final_node_order = []
+        coloring = init_coloring
 
-class WL_Coloring:
+        while len(sorted_color_node_pairs) > 0:
+            final_node_order.append(sorted_color_node_pairs[-1][1])
+            sorted_color_node_pairs.pop()
+            if len(sorted_color_node_pairs) > 0:
+                new_colors = WLColoringWithEdgeTypes(G, coloring, edge_types, init_active_set=set([final_node_order[-1]]))
+                coloring = new_colors.coloring
+                further_sort_by(sorted_color_node_pairs, coloring)
+        self.final_node_order = final_node_order
+        self.matrix = self.node_order_to_matrix(G, final_node_order)
+
+    def node_order_to_matrix(self, G, final_node_order):
+        matrix = []
+        for i in range(0, len(final_node_order)):
+            next_row = []
+            for j in range(i + 1, len(final_node_order)):
+                if G.has_edge(final_node_order[i], final_node_order[j]):
+                    next_row.append(1)
+                else:
+                    next_row.append(0)
+            matrix.append(next_row)
+
+        #self.ordered_labels = [self.external_labels[n] for n in final_node_order]
+        return matrix
+
+class WLColoringWithEdgeTypes:
 
     # Assumes the input colors are >= 0.
-    def __init__(self, G, init_coloring_dict):
+    # The edge_types is a dict mapping (source, target) to type label
+    # Note that the types can be different when pointing in the opposite direction.
+    def __init__(self, G, init_coloring_dict, edge_types, init_active_set=None):
         nodes = set(G.nodes)
         active = set(nodes)
-        non_active = set([])
+        if init_active_set is not None:
+            active = init_active_set
+        non_active = nodes - active
         neighbor_sets = {n: set(G.neighbors(n)) for n in nodes}
         coloring = init_coloring_dict
         partitions = {}
@@ -29,11 +137,10 @@ class WL_Coloring:
                 partitions[c] += 1
         partition_sizes = {n: partitions[coloring[n]] for n in nodes}
 
-        while True:
-            print(active)
+        while len(active) > 0:
             nc_pairs = []
             for node in active:
-                neighbor_colors = [coloring[n] for n in neighbor_sets[node]]
+                neighbor_colors = [(coloring[n], edge_types[(n, node)]) for n in neighbor_sets[node]]
                 neighbor_colors.sort()
                 nc_pairs.append(([coloring[node], neighbor_colors], node))
             nc_pairs.sort()
@@ -78,7 +185,6 @@ class PathSteps:
         self.neighbor_sets = {node: set(self.G.neighbors(node)) for node in self.G.nodes()}
         self.nodes = list(self.G.nodes())
         self.nodes.sort()
-        self.active_sets = [set(self.nodes)]
         # The final result. For each round, a set of directed edges with num of steps across.
         self.steps = {}
 
@@ -103,8 +209,8 @@ class PathSteps:
                     self.record_of_paths[(0, n1, tuple([n2]))] = 0
 
         self.completed_iterations = 0
-        while not self.compute_next_iteration():
-            pass
+        #while not self.compute_next_iteration():
+        #    pass
 
     # Returns True if finished. False otherwise.
     def compute_next_iteration(self):
@@ -248,6 +354,7 @@ G.add_node(4)
 G.add_node(5)
 G.add_node(6)
 G.add_node(7)
+G2 = nx.Graph(G)
 
 for i in range(0, 2):
     offset = i * 4
@@ -258,10 +365,28 @@ for i in range(0, 2):
     G.add_edge(offset+2,3+offset)
 G.add_edge(0,4)
 G.add_edge(3,7)
+print(G.edges())
+for i in range(0, 2):
+    offset = i * 4
+    G2.add_edge((offset+1)%8,(2+offset)%8)
+    G2.add_edge((offset+1)%8,(3+offset)%8)
+    G2.add_edge((offset+2)%8,(3+offset)%8)
+    G2.add_edge((offset+2)%8,(4+offset)%8)
+    G2.add_edge((offset+3)%8,(4+offset)%8)
+G2.add_edge(1,5)
+G2.add_edge(4,0)
+print(G2.edges())
 
 test = PathSteps(G)
 print(test.subsets([1, 3, 5, 6], 1, 4))
 init_coloring = {n: 0 for n in range(0, 8)}
-init_coloring[0] = 1
-test2 = WL_Coloring(G, init_coloring)
+init_edge_types = {}
+for (s, t) in G.edges():
+    init_edge_types[(s, t)] = 0
+    init_edge_types[(t, s)] = 0
+init_coloring[0] = 0
+init_edge_types[(0,1)] = 1
+test2 = WLColoringWithEdgeTypes(G, init_coloring, init_edge_types, init_active_set=set([0]))
 print(test2.coloring)
+
+print(paths_comparison(G, G2))
