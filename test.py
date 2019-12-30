@@ -1,6 +1,6 @@
 import networkx as nx
 from networkx import utils
-from networkx.algorithms.bipartite.generators import configuration_model
+# from networkx.algorithms.bipartite.generators import configuration_model
 from networkx.algorithms import isomorphism
 from networkx.algorithms.components import is_connected
 import numpy as np
@@ -9,6 +9,7 @@ from faster_neighbors_revisited import *
 from neighbors_revisited import *
 from miyazaki_graphs import *
 from paths import *
+from test_nauty import *
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -107,20 +108,21 @@ M3 = miyazaki_graph(3)
 M4 = miyazaki_graph(4)
 M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
+M100 = miyazaki_graph(100)
 
-COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10)]
-COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
+#COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_a.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_1000_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_8000_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_1000_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_8000_b.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_a = nx.Graph(base_0100_a)
 base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-# COMPARISONS += [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
+COMPARISONS = [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
@@ -147,21 +149,26 @@ for i in range(0, len(COMPARISONS)):
     """
 
     (G, G_prime) = COMPARISONS[i]
-    G_prime = permute_labels_only(G)
+    G_prime = permute_labels_only(G_prime)
+    print("Running Nauty...")
+    nauty_compute_automorphisms(G)
+    nauty_compute_automorphisms(G_prime)
+    print("Nauty Finished")
     #print("Starting prediction")
     #c_desc_G = FasterNeighborsRevisited(G)
     #print("...")
     #c_desc_G_prime = FasterNeighborsRevisited(G_prime)
     #print("...")
     #predict_iso = c_desc_G == c_desc_G_prime
+    print("Starting our prediction...")
     predict_iso = paths_comparison(G, G_prime)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
 
     # Get actual result
-    GM = isomorphism.GraphMatcher(G, G_prime)
-    actual_iso = GM.is_isomorphic()
-    # actual_iso = False
+    #GM = isomorphism.GraphMatcher(G, G_prime)
+    #actual_iso = GM.is_isomorphic()
+    actual_iso = predict_iso
 
     if predict_iso == actual_iso:
         print("\nCorrect!")

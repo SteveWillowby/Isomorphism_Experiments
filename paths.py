@@ -13,12 +13,36 @@ def further_sort_by(l, d):
             prev_label = l[i][0]
         l[i] = (new_id, l[i][1])
 
+def jointly_further_sort_by_and_compare(l1, d1, l2, d2):
+    for i in range(0, len(l1)):
+        l1[i] = ((l1[i][0], d1[l1[i][1]]), l1[i][1])
+        l2[i] = ((l2[i][0], d2[l2[i][1]]), l2[i][1])
+    l1.sort()
+    l2.sort()
+    all_equal = l1[0][0] == l2[0][0]
+    new_id_1 = 0
+    prev_label_1 = l1[0][0]
+    new_id_2 = 0
+    prev_label_2 = l2[0][0]
+    l1[0] = (0, l1[0][1])
+    l2[0] = (0, l2[0][1])
+    for i in range(1, len(l1)):
+        if l1[i][0] != l2[i][0]:
+            all_equal = False
+        if l1[i][0] != prev_label_1:
+            new_id_1 += 1
+            prev_label_1 = l1[i][0]
+        if l2[i][0] != prev_label_2:
+            new_id_2 += 1
+            prev_label_2 = l2[i][0]
+        l1[i] = (new_id_1, l1[i][1])
+        l2[i] = (new_id_2, l2[i][1])
+    return all_equal
+
 def paths_comparison(G1, G2):
     if len(G1.nodes()) != len(G2.nodes()):
-        print("Wat")
         return False
     if len(G1.edges()) != len(G2.edges()):
-        print("Wat 2")
         return False
     G1_nodes = set(G1.nodes())
     G2_nodes = set(G2.nodes())
@@ -31,19 +55,17 @@ def paths_comparison(G1, G2):
     G2_edge_types = [(0, (s, t)) for (s, t) in G2.edges()] + [(0, (t, s)) for (s, t) in G2.edges()]
     G1_coloring = [(0, n) for n in G1_nodes]
     G2_coloring = [(0, n) for n in G2_nodes]
-    #self.steps = {}
+    prev_max_color = 0
     while (not G1_done) and (not G2_done):
         G1_done = G1_paths.compute_next_iteration()
         G2_done = G2_paths.compute_next_iteration()
         completed_iterations += 1
         G1_latest_paths = {n: G1_paths.access(completed_iterations, n, []) for n in G1_nodes}
         G2_latest_paths = {n: G2_paths.access(completed_iterations, n, []) for n in G2_nodes}
-        further_sort_by(G1_coloring, G1_latest_paths)
-        further_sort_by(G2_coloring, G2_latest_paths)
-        for i in range(0, len(G1_coloring)): # TODO: Make this occur partway through the further refinement.
-            if G1_coloring[i][0] != G2_coloring[i][0]:
-                print("Color Check A Failed!")
-                return False
+        if not jointly_further_sort_by_and_compare(G1_coloring, G1_latest_paths, G2_coloring, G2_latest_paths):
+            print("Color Check A Failed!")
+            return False
+
         G1_latest_steps = {}
         for i in range(0, len(G1_edge_types)):
             (s, t) = G1_edge_types[i][1]
@@ -51,7 +73,6 @@ def paths_comparison(G1, G2):
                 G1_latest_steps[(s, t)] = G1_paths.steps[completed_iterations][(s, t)]
             else:
                 G1_latest_steps[(s, t)] = 0
-        further_sort_by(G1_edge_types, G1_latest_steps)
         G2_latest_steps = {}
         for i in range(0, len(G2_edge_types)):
             (s, t) = G2_edge_types[i][1]
@@ -59,25 +80,22 @@ def paths_comparison(G1, G2):
                 G2_latest_steps[(s, t)] = G2_paths.steps[completed_iterations][(s, t)]
             else:
                 G2_latest_steps[(s, t)] = 0
-        further_sort_by(G2_edge_types, G2_latest_steps)
-        for i in range(0, len(G1_edge_types)): # TODO: Make this occur partway through the further refinement.
-            if G1_edge_types[i][0] != G2_edge_types[i][0]:
-                print("Paths Check A Failed!")
-                return False
+        if not jointly_further_sort_by_and_compare(G1_edge_types, G1_latest_steps, G2_edge_types, G2_latest_steps):
+            print("Paths Check A Failed!")
+            return False
 
         G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
         G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
-        further_sort_by(G1_coloring, G1_WL_colors.coloring)
-        further_sort_by(G2_coloring, G2_WL_colors.coloring)
-        for i in range(0, len(G1_coloring)): # TODO: Make this occur partway through the further refinement.
-            if G1_coloring[i][0] != G2_coloring[i][0]:
-                print("Color Check B Failed!")
-                return False
-
-        G1_partial_canon = FlimsyCanonicalizer(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
-        G2_partial_canon = FlimsyCanonicalizer(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
-        if G1_partial_canon.matrix == G2_partial_canon.matrix:
-            return True
+        if not jointly_further_sort_by_and_compare(G1_coloring, G1_WL_colors.coloring, G2_coloring, G2_WL_colors.coloring):
+            print("Color Check B Failed!")
+            return False
+        if completed_iterations == 1 or prev_max_color < G1_coloring[-1][0]:
+            G1_partial_canon = FlimsyCanonicalizer(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
+            G2_partial_canon = FlimsyCanonicalizer(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+            if G1_partial_canon.matrix == G2_partial_canon.matrix:
+                print("A total of %d orbits found" % (G1_coloring[-1][0] + 1))
+                return True
+        prev_max_color = G1_coloring[-1][0]
 
     print("Finished without Canonicalizing As Same!")
     return False
@@ -122,7 +140,7 @@ class WLColoringWithEdgeTypes:
     # The edge_types is a dict mapping (source, target) to type label
     # Note that the types can be different when pointing in the opposite direction.
     def __init__(self, G, init_coloring_dict, edge_types, init_active_set=None):
-        nodes = set(G.nodes)
+        nodes = set(G.nodes())
         active = set(nodes)
         if init_active_set is not None:
             active = init_active_set
@@ -188,7 +206,7 @@ class PathSteps:
         # The final result. For each round, a set of directed edges with num of steps across.
         self.steps = {}
 
-        self.ALT_RECORD = True # Seems to save space and produce equivalent runtime.
+        self.ALT_RECORD = False # Seems to save space and produce equivalent runtime.
         if not self.ALT_RECORD:
             # First layer of dict is path length.
             # Within this, a dict for paths to a node. # is indicated by ["num"]
@@ -218,7 +236,6 @@ class PathSteps:
         had_any_paths = False
         for node in self.nodes:
             num_paths = self.find_value(self.completed_iterations, node, [])
-            print("Num to node %d: %d" % (node, num_paths))
             if num_paths > 0:
                 had_any_paths = True
         return not had_any_paths
@@ -284,12 +301,17 @@ class PathSteps:
                     return 0
         # NECESSARY CHECKS (???) END HERE.
         # SPEEDUP (HOPEFULLY) HEURISTICS BEGIN HERE.
-        subsets_of_incl_nodes = self.subsets(other_incl_nodes, min_size=2, max_size=len(other_incl_nodes)-1)
-        for subset in subsets_of_incl_nodes:
-            full_subset_value = self.find_value(iteration, dest_node, subset)
-            if full_subset_value == 0:
+        if False and not self.ALT_RECORD:
+            if self.search_existing_subset_results_for_zero(iteration, dest_node, other_incl_nodes):
                 self.assign(0, iteration, dest_node, other_incl_nodes)
                 return 0
+        else:
+            subsets_of_incl_nodes = self.subsets(other_incl_nodes, min_size=2, max_size=len(other_incl_nodes)-1)
+            for subset in subsets_of_incl_nodes:
+                full_subset_value = self.access(iteration, dest_node, subset)
+                if full_subset_value == 0:
+                    self.assign(0, iteration, dest_node, other_incl_nodes)
+                    return 0
             # THE FOLLOWING SLOWS THINGS DOWN.
             #subsets_of_subset = self.subsets(subset, min_size=1, max_size=len(subset)-1)
             #for subset_of_subset in subsets_of_subset:
@@ -344,6 +366,27 @@ class PathSteps:
                 else:
                     indices[-1] += 1
         return subsets
+
+    def search_existing_subset_results_for_zero(self, iteration, dest_node, other_incl_nodes):
+        if iteration not in self.record_of_paths:
+            return False
+        start_dict = self.record_of_paths[iteration][dest_node]
+        incl_nodes_set = set(other_incl_nodes)
+        stack = [[(node, sub_dict) for node, sub_dict in start_dict.items()]]
+        while len(stack) > 0:
+            while len(stack[-1]) > 0:
+                if stack[-1][-1][0] == "num":
+                    if stack[-1][-1][1] == 0:
+                        return True
+                    stack[-1].pop()
+                elif stack[-1][-1][0] in incl_nodes_set:
+                    (investigate_node, corresponding_dict) = stack[-1].pop()
+                    stack.append([(node, sub_dict) for node, sub_dict in corresponding_dict.items()])
+                else:
+                    stack[-1].pop()
+            stack.pop()
+
+        return False
 
 G = nx.Graph()
 G.add_node(0)
