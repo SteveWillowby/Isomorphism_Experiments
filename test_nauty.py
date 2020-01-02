@@ -33,12 +33,15 @@ def _build_dreadnaut_file(g):
           file_content.append(line)
     # add nauty command
     file_content.append(".")
+    file_content.append("+c")
     file_content.append("x")
     file_content.append("o")
+    file_content.append("b")
+    # print(file_content)
     return file_content
 
 
-def nauty_compute_automorphisms(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Traces/nauty26r12/dreadnaut"):
+def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Traces/nauty26r12/dreadnaut"):
     # get dreadnaut command file
     file_content = _build_dreadnaut_file(g)
     # write to tmp_path
@@ -49,8 +52,14 @@ def nauty_compute_automorphisms(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call
                           input=b"< " + tmp_path.encode(),
                           stdout=subprocess.PIPE,
                           stderr=subprocess.DEVNULL)
-    [info, _, orbits] = proc.stdout.decode().strip().split("\n", 2)
-    print(info)
+    res = proc.stdout.decode()
+    #print(res)
+    lines = res.strip().split("\n")
+    info = lines[0]
+    orbits = lines[2]
+    G = lines[3:]
+    # = res.strip().split("\n", 2)
+    #print(info)
     # ~~~~~~~~~~~~~~
     # Extract high level info from captured output
     # ~~~~~~~~~~~~~~
@@ -76,7 +85,14 @@ def nauty_compute_automorphisms(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call
         X[i] = final_orbit
     # garbage collection
     remove(tmp_path)
-    return num_orbits, num_gen, X
+    return num_orbits, num_gen, X, G
+
+def nauty_isomorphism_check(G1, G2):
+    _, _, _, CG1 = nauty_compute(G1)
+    _, _, _, CG2 = nauty_compute(G2)
+    print(CG1)
+    print(CG2)
+    return CG1 == CG2
 
 """
 if __name__ == '__main__':

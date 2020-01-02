@@ -151,8 +151,7 @@ for i in range(0, len(COMPARISONS)):
     (G, G_prime) = COMPARISONS[i]
     G_prime = permute_labels_only(G_prime)
     print("Running Nauty...")
-    nauty_compute_automorphisms(G)
-    nauty_compute_automorphisms(G_prime)
+    actual_iso = nauty_isomorphism_check(G, G_prime)
     print("Nauty Finished")
     #print("Starting prediction")
     #c_desc_G = FasterNeighborsRevisited(G)
@@ -168,7 +167,8 @@ for i in range(0, len(COMPARISONS)):
     # Get actual result
     #GM = isomorphism.GraphMatcher(G, G_prime)
     #actual_iso = GM.is_isomorphic()
-    actual_iso = predict_iso
+    # actual_iso = predict_iso
+    exit()
 
     if predict_iso == actual_iso:
         print("\nCorrect!")
