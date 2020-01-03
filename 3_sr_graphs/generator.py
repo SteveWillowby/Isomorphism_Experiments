@@ -15,6 +15,17 @@ def graph_with_n_nodes(NUM_NODES=7):
 
     edge_vars = LpVariable.dicts("Potential_Edge_Vars", potential_edges, cat="Binary")
 
+    # Here just to speed things up.
+    prev_edges = []
+    for i in range(0, NUM_NODES):
+        edges = []
+        for j in range(0, NUM_NODES):
+            if i != j:
+                edges.append((min(i,j), max(i,j)))
+        if i > 0:
+            problem += lpSum({key: edge_vars[key] for key in prev_edges}) <= lpSum({key: edge_vars[key] for key in edges})
+        prev_edges = edges
+
     is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
     is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
     is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
