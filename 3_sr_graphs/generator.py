@@ -3,64 +3,162 @@ from pulp import *
 
 problem = LpProblem("Generate_a_3SR_Graph", LpMinimize)
 
-NUM_NODES = 15
+NUM_NODES = 7
 potential_edges = []
-is_a_triangle = []
-is_a_wedge = []
-is_an_edge = []
-is_empty = []
+threes = []
 for i in range(0, NUM_NODES):
     for j in range(i+1, NUM_NODES):
         potential_edges.append((i,j))
         for k in range(j+1, NUM_NODES):
-            is_a_triangle.append((i,j,k))
-            is_a_wedge.append((i,j,k))
-            is_an_edge.append((i,j,k))
-            is_empty.append((i,j,k))
+            threes.append((i,j,k))
 
-potential_edge_vars = LpVariable.dicts("Potential_Edge_Vars", potential_edges, cat="Binary")
+edge_vars = LpVariable.dicts("Potential_Edge_Vars", potential_edges, cat="Binary")
 
-triangle_vars = LpVariable.dicts("Triangle_Vars", is_a_triangle, cat="Binary")
-wedge_vars = LpVariable.dicts("Wedge_Vars", is_a_wedge, cat="Binary")
-edge_vars = LpVariable.dicts("Edge_Vars", is_an_edge, cat="Binary")
-empty_vars = LpVariable.dicts("Empty_Vars", is_empty, cat="Binary")
+is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
+is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
+is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
+is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Binary")
 
 # Constraints to force triple vars to correspond to edge vars.
+for (i, j, k) in threes:
+    edge_dict = {key: edge_vars[key] for key in [(i,j), (i,k), (j,k)]}
+    problem += lpSum(edge_dict) == is_triangle[(i,j,k)] * 3 + is_wedge[(i,j,k)] * 2 + is_edge[(i,j,k)]*1
+    problem += is_triangle[(i,j,k)] + is_wedge[(i,j,k)] + is_edge[(i,j,k)] + is_empty[(i,j,k)] == 1
+
+# Force number of each 3-node component to be non-zero
+problem += lpSum(is_triangle) >= 1
+problem += lpSum(is_wedge) >= 1
+problem += lpSum(is_edge) >= 1
+problem += lpSum(is_empty) >= 1
+
+fours = []
 for i in range(0, NUM_NODES):
     for j in range(i+1, NUM_NODES):
         for k in range(j+1, NUM_NODES):
-            edge_dict = {key: potential_edge_vars[key] for key in [(i,j), (i,k), (j,k)]}
-            problem += lpSum(edge_dict) == triangle_vars[(i,j,k)] * 3 + wedge_vars[(i,j,k)] * 2 + edge_vars[(i,j,k)]*1
-            problem += triangle_vars[(i,j,k)] + wedge_vars[(i,j,k)] + edge_vars[(i,j,k)] + empty_vars[(i,j,k)] == 1
+            for l in range(0, i):
+                fours.append((l, (i, j, k)))
+            for l in range(i+1, j):
+                fours.append((l, (i, j, k)))
+            for l in range(j+1, k):
+                fours.append((l, (i, j, k)))
+            for l in range(k+1, NUM_NODES):
+                fours.append((l, (i, j, k)))
 
-# Force number of each 3-node component to be non-zero
-problem += lpSum(triangle_vars) >= 1
-problem += lpSum(wedge_vars) >= 1
-problem += lpSum(edge_vars) >= 1
-problem += lpSum(empty_vars) >= 1
+to_all_triangle = LpVariable.dicts("To_All_Triangle", fours, cat="Binary")
+to_two_triangle = LpVariable.dicts("To_Two_Triangle", fours, cat="Binary")
+to_one_triangle = LpVariable.dicts("To_One_Triangle", fours, cat="Binary")
+to_all_wedge = LpVariable.dicts("To_All_Wedge", fours, cat="Binary")
+to_1_1_wedge = LpVariable.dicts("To_1_1_Wedge", fours, cat="Binary")
+to_2_wedge = LpVariable.dicts("To_2_Wedge", fours, cat="Binary")
+to_in_wedge = LpVariable.dicts("To_In_Wedge", fours, cat="Binary")
+to_out_wedge = LpVariable.dicts("To_Out_Wedge", fours, cat="Binary")
+to_all_edge = LpVariable.dicts("To_All_Edge", fours, cat="Binary")
+to_1_1_edge = LpVariable.dicts("To_1_1_Edge", fours, cat="Binary")
+to_2_edge = LpVariable.dicts("To_2_Edge", fours, cat="Binary")
+to_in_edge = LpVariable.dicts("To_In_Edge", fours, cat="Binary")
+to_out_edge = LpVariable.dicts("To_Out_Edge", fours, cat="Binary")
+to_all_empty = LpVariable.dicts("To_All_Empty", fours, cat="Binary")
+to_two_empty = LpVariable.dicts("To_Two_Empty", fours, cat="Binary")
+to_one_empty = LpVariable.dicts("To_One_Empty", fours, cat="Binary")
 
-to_all_triangle = LpVariable.dicts("To_All_Triangle", is_a_triangle, cat="Binary")
-to_two_triangle = LpVariable.dicts("To_Two_Triangle", is_a_triangle, cat="Binary")
-to_one_triangle = LpVariable.dicts("To_One_Triangle", is_a_triangle, cat="Binary")
-to_all_wedge = LpVariable.dicts("To_All_Wedge", is_a_triangle, cat="Binary")
-to_1_1_wedge = LpVariable.dicts("To_1_1_Wedge", is_a_triangle, cat="Binary")
-to_2_wedge = LpVariable.dicts("To_2_Wedge", is_a_triangle, cat="Binary")
-to_in_wedge = LpVariable.dicts("To_In_Wedge", is_a_triangle, cat="Binary")
-to_out_wedge = LpVariable.dicts("To_Out_Wedge", is_a_triangle, cat="Binary")
-to_all_edge = LpVariable.dicts("To_All_Edge", is_a_triangle, cat="Binary")
-to_1_1_edge = LpVariable.dicts("To_1_1_Edge", is_a_triangle, cat="Binary")
-to_2_edge = LpVariable.dicts("To_2_Edge", is_a_triangle, cat="Binary")
-to_in_edge = LpVariable.dicts("To_In_Edge", is_a_triangle, cat="Binary")
-to_out_edge = LpVariable.dicts("To_Out_Edge", is_a_triangle, cat="Binary")
-to_all_empty = LpVariable.dicts("To_All_Empty", is_a_triangle, cat="Binary")
-to_two_empty = LpVariable.dicts("To_Two_Empty", is_a_triangle, cat="Binary")
-to_one_empty = LpVariable.dicts("To_One_Empty", is_a_triangle, cat="Binary")
+# Must be a triangle to be a to_all_triangle, etc.
+for four in fours:
+    problem += is_triangle[four[1]] >= to_all_triangle[four] + to_two_triangle[four] + to_one_triangle[four]
+    problem += is_empty[four[1]] >= to_all_empty[four] + to_two_empty[four] + to_one_empty[four]
+    problem += is_wedge[four[1]] >= to_all_wedge[four] + to_1_1_wedge[four] + to_2_wedge[four] + to_in_wedge[four] + to_out_wedge[four]
+    problem += is_edge[four[1]] >= to_all_edge[four] + to_1_1_edge[four] + to_2_edge[four] + to_in_edge[four] + to_out_edge[four]
 
-# print(problem)
+# Constraints to force one of the to_a_b's with the right number of edges if is_b is set.
+for four in fours:
+    (l, (i, j, k)) = four
+    li = (min(l, i), max(l, i))
+    lj = (min(l, j), max(l, j))
+    lk = (min(l, k), max(l, k))
+    problem += (3 * to_all_triangle[four]) + (2 * to_two_triangle[four]) + (1 * to_one_triangle[four]) <= \
+        edge_vars[li] + edge_vars[lj] + edge_vars[lk]
+    problem += edge_vars[li] + edge_vars[lj] + edge_vars[lk] <= \
+        (3 * to_all_triangle[four]) + (2 * to_two_triangle[four]) + (1 * to_one_triangle[four]) + 3 - (3*is_triangle[(i, j, k)])
+
+    problem += 3 * to_all_empty[four] + 2 * to_two_empty[four] + 1 * to_one_empty[four] <= \
+        edge_vars[li] + edge_vars[lj] + edge_vars[lk]
+    problem += edge_vars[li] + edge_vars[lj] + edge_vars[lk] <= \
+        3 * to_all_empty[four] + 2 * to_two_empty[four] + 1 * to_one_empty[four] + 3*(1 - is_empty[(i, j, k)])
+
+    problem += 3 * to_all_wedge[four] + 2 * to_1_1_wedge[four] + 2 * to_2_wedge[four] + to_in_wedge[four] + to_out_wedge[four] <= \
+        edge_vars[li] + edge_vars[lj] + edge_vars[lk]
+    problem += edge_vars[li] + edge_vars[lj] + edge_vars[lk] <= \
+        3 * to_all_wedge[four] + 2 * to_1_1_wedge[four] + 2 * to_2_wedge[four] + to_in_wedge[four] + to_out_wedge[four] + 3*(1 - is_wedge[(i,j,k)])
+
+    problem += 3 * to_all_edge[four] + 2 * to_1_1_edge[four] + 2 * to_2_edge[four] + to_in_edge[four] + to_out_edge[four] <= \
+        edge_vars[li] + edge_vars[lj] + edge_vars[lk]
+    problem += edge_vars[li] + edge_vars[lj] + edge_vars[lk] <= \
+        3 * to_all_edge[four] + 2 * to_1_1_edge[four] + 2 * to_2_edge[four] + to_in_edge[four] + to_out_edge[four] + 3*(1 - is_edge[(i,j,k)])
+
+#TODO: Constraints for rule out _2_ and _1_1_, _in_ and _out_.
+for four in fours:
+    (l, (i, j, k)) = four
+    lij = sorted([l, i, j])
+    lij = (lij[0], lij[1], lij[2])
+    lik = sorted([l, i, k])
+    lik = (lik[0], lik[1], lik[2])
+    ljk = sorted([l, j, k])
+    ljk = (ljk[0], ljk[1], ljk[2])
+    problem += 3*to_2_wedge[four] <= 3 - (is_triangle[lij] + is_triangle[lik] + is_triangle[ljk])
+    problem += to_1_1_wedge[four] <= is_triangle[lij] + is_triangle[lik] + is_triangle[ljk]
+    problem += to_in_wedge[four] <= is_empty[lij] + is_empty[lik] + is_empty[ljk]
+    problem += 3*to_out_wedge[four] <= 3 - (is_empty[lij] + is_empty[lik] + is_empty[ljk])
+
+    problem += to_2_edge[four] <= is_triangle[lij] + is_triangle[lik] + is_triangle[ljk]
+    problem += 3*to_1_1_edge[four] <= 3 - (is_triangle[lij] + is_triangle[lik] + is_triangle[ljk])
+    problem += to_in_edge[four] <= is_wedge[lij] + is_wedge[lik] + is_wedge[ljk]
+    problem += 3*to_out_edge[four] <= 3 - (is_wedge[lij] + is_wedge[lik] + is_wedge[ljk])
+
+nums = ["num_to_all_triangle", "num_to_two_triangle", "num_to_one_triangle",\
+        "num_to_all_wedge", "num_to_1_1_wedge", "num_to_2_wedge", "num_to_in_wedge", "num_to_out_wedge",\
+        "num_to_all_edge", "num_to_1_1_edge", "num_to_2_edge", "num_to_in_edge", "num_to_out_edge",\
+        "num_to_all_empty", "num_to_two_empty", "num_to_one_empty"]
+
+MAX_POSSIBLE = NUM_NODES - 3
+num_vars = LpVariable.dicts("Num_To_All_Triangle", nums, cat="Continuous")
+for three in threes:
+    (i, j, k) = three
+    conditional_fours = []
+    for l in range(0, NUM_NODES):
+        if l != i and l != j and l != k:
+            conditional_fours.append((l, three))
+    problem += lpSum({to_all_triangle[key] for key in conditional_fours}) <= num_vars["num_to_all_triangle"] + MAX_POSSIBLE * (1-is_triangle[three])
+    problem += num_vars["num_to_all_triangle"] <= lpSum({to_all_triangle[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_triangle[three])
+    problem += lpSum({to_two_triangle[key] for key in conditional_fours}) <= num_vars["num_to_two_triangle"] + MAX_POSSIBLE * (1-is_triangle[three])
+    problem += num_vars["num_to_two_triangle"] <= lpSum({to_two_triangle[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_triangle[three])
+    problem += lpSum({to_one_triangle[key] for key in conditional_fours}) <= num_vars["num_to_one_triangle"] + MAX_POSSIBLE * (1-is_triangle[three])
+    problem += num_vars["num_to_one_triangle"] <= lpSum({to_one_triangle[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_triangle[three])
+
+    problem += lpSum({to_all_empty[key] for key in conditional_fours}) <= num_vars["num_to_all_empty"] + MAX_POSSIBLE * (1-is_empty[three])
+    problem += num_vars["num_to_all_empty"] <= lpSum({to_all_empty[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_empty[three])
+    problem += lpSum({to_two_empty[key] for key in conditional_fours}) <= num_vars["num_to_two_empty"] + MAX_POSSIBLE * (1-is_empty[three])
+    problem += num_vars["num_to_two_empty"] <= lpSum({to_two_empty[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_empty[three])
+    problem += lpSum({to_one_empty[key] for key in conditional_fours}) <= num_vars["num_to_one_empty"] + MAX_POSSIBLE * (1-is_empty[three])
+    problem += num_vars["num_to_one_empty"] <= lpSum({to_one_empty[key] for key in conditional_fours}) + MAX_POSSIBLE * (1-is_empty[three])
+
 problem.solve()
-for pe, pe_v in potential_edge_vars.items():
+print("Status:", LpStatus[problem.status])
+for pe, pe_v in edge_vars.items():
     print(pe)
     print(pe_v.varValue)
+
+for three in threes:
+    if is_triangle[three].varValue > 0.0:
+        print("(%d, %d, %d) is triangle" % (three[0], three[1], three[2]))
+    if is_wedge[three].varValue > 0.0:
+        print("(%d, %d, %d) is wedge" % (three[0], three[1], three[2]))
+    if is_edge[three].varValue > 0.0:
+        print("(%d, %d, %d) is edge" % (three[0], three[1], three[2]))
+    if is_empty[three].varValue > 0.0:
+        print("(%d, %d, %d) is empty" % (three[0], three[1], three[2]))
+
+#for four in fours:
+#    print("(%d, (%d, %d, %d)) is to_in_wedge: %f, to_out_wedge: %f" % (four[0], four[1][0], four[1][1], four[1][2], \
+#        to_in_wedge[four].varValue, to_out_wedge[four].varValue))
 
 # Example from online below.
 
