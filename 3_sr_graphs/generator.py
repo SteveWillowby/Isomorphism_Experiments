@@ -26,16 +26,23 @@ def graph_with_n_nodes(NUM_NODES=7):
             problem += lpSum({key: edge_vars[key] for key in prev_edges}) <= lpSum({key: edge_vars[key] for key in edges})
         prev_edges = edges
 
-    is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
-    is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
-    is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
-    is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Binary")
+    #is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
+    #is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
+    #is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
+    #is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Binary")
+    is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
 
     # Constraints to force triple vars to correspond to edge vars.
     for (i, j, k) in threes:
         edge_dict = {key: edge_vars[key] for key in [(i,j), (i,k), (j,k)]}
         problem += lpSum(edge_dict) == is_triangle[(i,j,k)] * 3 + is_wedge[(i,j,k)] * 2 + is_edge[(i,j,k)]*1
         problem += is_triangle[(i,j,k)] + is_wedge[(i,j,k)] + is_edge[(i,j,k)] + is_empty[(i,j,k)] == 1
+        problem += is_empty[(i,j,k)] <= 1 - edge_vars[(i,j)]
+        problem += is_empty[(i,j,k)] <= 1 - edge_vars[(i,k)]
+        problem += is_empty[(i,j,k)] <= 1 - edge_vars[(j,k)]
 
     # Force number of each 3-node component to be non-zero
     problem += lpSum(is_triangle) >= 1
@@ -56,6 +63,7 @@ def graph_with_n_nodes(NUM_NODES=7):
                 for l in range(k+1, NUM_NODES):
                     fours.append((l, (i, j, k)))
 
+    """
     to_all_triangle = LpVariable.dicts("To_All_Triangle", fours, cat="Binary")
     to_two_triangle = LpVariable.dicts("To_Two_Triangle", fours, cat="Binary")
     to_one_triangle = LpVariable.dicts("To_One_Triangle", fours, cat="Binary")
@@ -72,6 +80,23 @@ def graph_with_n_nodes(NUM_NODES=7):
     to_all_empty = LpVariable.dicts("To_All_Empty", fours, cat="Binary")
     to_two_empty = LpVariable.dicts("To_Two_Empty", fours, cat="Binary")
     to_one_empty = LpVariable.dicts("To_One_Empty", fours, cat="Binary")
+    """
+    to_all_triangle = LpVariable.dicts("To_All_Triangle", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_two_triangle = LpVariable.dicts("To_Two_Triangle", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_one_triangle = LpVariable.dicts("To_One_Triangle", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_all_wedge = LpVariable.dicts("To_All_Wedge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_1_1_wedge = LpVariable.dicts("To_1_1_Wedge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_2_wedge = LpVariable.dicts("To_2_Wedge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_in_wedge = LpVariable.dicts("To_In_Wedge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_out_wedge = LpVariable.dicts("To_Out_Wedge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_all_edge = LpVariable.dicts("To_All_Edge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_1_1_edge = LpVariable.dicts("To_1_1_Edge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_2_edge = LpVariable.dicts("To_2_Edge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_in_edge = LpVariable.dicts("To_In_Edge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_out_edge = LpVariable.dicts("To_Out_Edge", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_all_empty = LpVariable.dicts("To_All_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_two_empty = LpVariable.dicts("To_Two_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
+    to_one_empty = LpVariable.dicts("To_One_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
     
     # Must be a triangle to be a to_all_triangle, etc.
     for four in fours:
@@ -189,7 +214,16 @@ def graph_with_n_nodes(NUM_NODES=7):
                     row.append(int(edge_vars[(min(i, j), max(i, j))].varValue))
             print(row)
         for num in nums:
-            print("%s: %d" % (num, int(num_vars[num].varValue)))
+            print("%s: %.1f" % (num, num_vars[num].varValue))
+        for three in threes:
+            if is_triangle[three].varValue > 0.0:
+                print("Is triangle (%d, %d, %d): %f" % (three[0], three[1], three[2], is_triangle[three].varValue))
+            if is_wedge[three].varValue > 0.0:
+                print("Is wedge (%d, %d, %d): %f" % (three[0], three[1], three[2], is_wedge[three].varValue))
+            if is_edge[three].varValue > 0.0:
+                print("Is edge (%d, %d, %d): %f" % (three[0], three[1], three[2], is_edge[three].varValue))
+            if is_empty[three].varValue > 0.0:
+                print("Is empty (%d, %d, %d): %f" % (three[0], three[1], three[2], is_empty[three].varValue))
     sys.stdout.flush()
     
     #for three in threes:
