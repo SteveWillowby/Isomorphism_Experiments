@@ -26,14 +26,14 @@ def graph_with_n_nodes(NUM_NODES=7):
             problem += lpSum({key: edge_vars[key] for key in prev_edges}) <= lpSum({key: edge_vars[key] for key in edges})
         prev_edges = edges
 
-    #is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
-    #is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
-    #is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
-    #is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Binary")
-    is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
-    is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
-    is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
-    is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Binary")
+    is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Binary")
+    is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Binary")
+    is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Binary")
+    #is_triangle = LpVariable.dicts("Triangle_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    #is_wedge = LpVariable.dicts("Wedge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    #is_edge = LpVariable.dicts("Edge_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
+    #is_empty = LpVariable.dicts("Empty_Vars", threes, cat="Continuous", lowBound=0, upBound=1)
 
     # Constraints to force triple vars to correspond to edge vars.
     for (i, j, k) in threes:
@@ -63,7 +63,6 @@ def graph_with_n_nodes(NUM_NODES=7):
                 for l in range(k+1, NUM_NODES):
                     fours.append((l, (i, j, k)))
 
-    """
     to_all_triangle = LpVariable.dicts("To_All_Triangle", fours, cat="Binary")
     to_two_triangle = LpVariable.dicts("To_Two_Triangle", fours, cat="Binary")
     to_one_triangle = LpVariable.dicts("To_One_Triangle", fours, cat="Binary")
@@ -97,6 +96,7 @@ def graph_with_n_nodes(NUM_NODES=7):
     to_all_empty = LpVariable.dicts("To_All_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
     to_two_empty = LpVariable.dicts("To_Two_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
     to_one_empty = LpVariable.dicts("To_One_Empty", fours, cat="Continuous", lowBound=0, upBound=1)
+    """
     
     # Must be a triangle to be a to_all_triangle, etc.
     for four in fours:
@@ -158,7 +158,7 @@ def graph_with_n_nodes(NUM_NODES=7):
     MAX_POSSIBLE = NUM_NODES - 3
     num_vars = LpVariable.dicts("Num_To_All_Triangle", nums, cat="Continuous")
     for num in nums:
-        problem += num_vars[num] >= 1
+        problem += num_vars[num] >= 0
     
     for three in threes:
         (i, j, k) = three
