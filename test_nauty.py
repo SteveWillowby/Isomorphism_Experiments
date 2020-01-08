@@ -53,7 +53,6 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
                           stdout=subprocess.PIPE,
                           stderr=subprocess.DEVNULL)
     res = proc.stdout.decode()
-    #print(res)
     lines = res.strip().split("\n")
     info = lines[0]
     orbits = lines[2]
@@ -88,11 +87,42 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
     return num_orbits, num_gen, X, G
 
 def nauty_isomorphism_check(G1, G2):
-    _, _, _, CG1 = nauty_compute(G1)
-    _, _, _, CG2 = nauty_compute(G2)
-    print(CG1)
-    print(CG2)
-    return CG1 == CG2
+    G3 = nx.Graph()
+    G1_nodes = list(G1.nodes())
+    G1_max = G1_nodes[0]
+    for node in G1_nodes:
+        if node > G1_max:
+            G1_max = node
+        G3.add_node(node)
+    for (a, b) in G1.edges():
+        G3.add_edge(a, b)
+    G1_max += 1
+    G3.add_node(G1_max)
+    for node in G1_nodes:
+        G3.add_edge(node, G1_max)
+
+    G4 = nx.Graph(G3)
+
+    G2_start = G1_max + 1
+    G2_nodes = list(G2.nodes())
+    G2_max = G2_nodes[0]
+    for node in G2_nodes:
+        if node > G2_max:
+            G2_max = node
+        G3.add_node(G2_start + node)
+    G2_max += 1
+    for (a, b) in G2.edges():
+        G3.add_edge(a + G2_start, b + G2_start)
+    G3.add_node(G2_max + G2_start)
+    for node in G2_nodes:
+        G3.add_edge(node + G2_start, G2_max + G2_start)
+
+    n1, _, _, _ = nauty_compute(G3)
+    n2, _, _, _ = nauty_compute(G4)
+    print(n1)
+    print(n2)
+    #print(CG2)
+    return n1 == n2
 
 """
 if __name__ == '__main__':
