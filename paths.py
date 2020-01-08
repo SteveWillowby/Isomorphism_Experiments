@@ -39,6 +39,109 @@ def jointly_further_sort_by_and_compare(l1, d1, l2, d2):
         l2[i] = (new_id_2, l2[i][1])
     return all_equal
 
+def shortest_paths_comparison(G1, G2):
+    if len(G1.nodes()) != len(G2.nodes()):
+        return False
+    if len(G1.edges()) != len(G2.edges()):
+        return False
+
+    # Zero-index the graphs so we can use arrays rather than dicts.
+    G1_nodes = list(G1.nodes())
+    G2_nodes = list(G2.nodes())
+    G1_nodes.sort()
+    G2_nodes.sort()
+    G1_nodes_dict = {G1_nodes[i]: i for i in range(0, len(G1_nodes))}
+    G2_nodes_dict = {G2_nodes[i]: i for i in range(0, len(G2_nodes))}
+    new_G1 = nx.Graph()
+    new_G2 = nx.Graph()
+    for i in range(0, len(G1_nodes)):
+        new_G1.add_node(i)
+        new_G2.add_node(i)
+    for (a, b) in G1.edges():
+        new_G1.add_edge(G1_nodes_dict[a], G1_nodes_dict[b])
+    for (a, b) in G2.edges():
+        new_G2.add_edge(G2_nodes_dict[a], G2_nodes_dict[b])
+    G1 = new_G1
+    G1_nodes = [i for i in range(0, len(G1_nodes))]
+    G2 = new_G2
+    G2_nodes = [i for i in range(0, len(G2_nodes))]
+
+    # Compute paths
+    G1_neighbors_lists = [list(G1.neighbors(n)) for n in G1_nodes]
+    G2_neighbors_lists = [list(G2.neighbors(n)) for n in G2_nodes]
+    G1_edge_labels = {}
+    for (a, b) in G1.edges():
+        G1_edge_labels[(a, b)] = []
+        G1_edge_labels[(b, a)] = []
+    G2_edge_labels = {}
+    for (a, b) in G2.edges():
+        G2_edge_labels[(a, b)] = []
+        G2_edge_labels[(b, a)] = []
+    G1_visited_sets = [set([n]) for n in G1_nodes]
+    G2_visited_sets = [set([n]) for n in G2_nodes]
+    G1_unfinished = set(G1_nodes)
+    G2_unfinished = set(G2_nodes)
+    path_length = 1
+    while len(G1_unfinished) > 0:
+        prev_G1_visited_sets = [set(v) for v in G1_visited_sets]
+        prev_unfinished = set(G1_unfinished)
+        for unfinished_node in prev_unfinished:
+            for neighbor in G1_neighbors_lists[unfinished_node]:
+                if neighbor not in prev_unfinished:
+                    continue
+                old_neighbor_size = len(prev_G1_visited_sets[neighbor])
+                neighbor_size_with_transmission = len(prev_G1_visited_sets[neighbor] | prev_G1_visited_sets[unfinished_node])
+                transmission_size = neighbor_size_with_transmission - old_neighbor_size
+                if transmission_size > 0:
+                    edge = (unfinished_node, neighbor)
+                    if len(G1_edge_labels[edge]) == 0 or G1_edge_labels[edge][-1][0] < path_length:
+                        G1_edge_labels[edge].append([path_length, transmission_size])
+                    else:
+                        print("I THINK THIS SHOULDN'T HAPPEN!")
+                        G1_edge_labels[edge][-1][1] += transmission_size
+
+                G1_visited_sets[neighbor] |= prev_G1_visited_sets[unfinished_node]
+                if len(G1_visited_sets[neighbor]) == len(G1_nodes):
+                    G1_unfinished.discard(neighbor)
+        path_length += 1
+    path_length = 1
+    while len(G2_unfinished) > 0:
+        prev_G2_visited_sets = [set(v) for v in G2_visited_sets]
+        prev_unfinished = list(G2_unfinished)
+        for unfinished_node in prev_unfinished:
+            for neighbor in G2_neighbors_lists[unfinished_node]:
+                if neighbor not in prev_unfinished:
+                    continue
+                old_neighbor_size = len(prev_G2_visited_sets[neighbor])
+                neighbor_size_with_transmission = len(prev_G2_visited_sets[neighbor] | prev_G2_visited_sets[unfinished_node])
+                transmission_size = neighbor_size_with_transmission - old_neighbor_size
+                if transmission_size > 0:
+                    edge = (unfinished_node, neighbor)
+                    if len(G2_edge_labels[edge]) == 0 or G2_edge_labels[edge][-1][0] < path_length:
+                        G2_edge_labels[edge].append([path_length, transmission_size])
+                    else:
+                        print("I THINK THIS SHOULDNT HAPPEN!")
+                        G2_edge_labels[edge][-1][1] += transmission_size
+
+                G2_visited_sets[neighbor] |= prev_G2_visited_sets[unfinished_node]
+                if len(G2_visited_sets[neighbor]) == len(G2_nodes):
+                    G2_unfinished.discard(neighbor)
+        path_length += 1
+
+    G1_edge_label_list = [(0, e) for e, l in G1_edge_labels.items()]
+    G2_edge_label_list = [(0, e) for e, l in G2_edge_labels.items()]
+    if not jointly_further_sort_by_and_compare(G1_edge_label_list, G1_edge_labels, G2_edge_label_list, G2_edge_labels):
+        return False
+
+    for (label, edge) in G1_edge_label_list:
+        G1_edge_labels[edge] = label
+    for (label, edge) in G2_edge_label_list:
+        G2_edge_labels[edge] = label
+    
+    G1_canon = FlimsyCanonicalizer(G1, {n: 0 for n in G1_nodes}, G1_edge_labels)
+    G2_canon = FlimsyCanonicalizer(G2, {n: 0 for n in G2_nodes}, G2_edge_labels)
+    return G1_canon.matrix == G2_canon.matrix
+
 def paths_comparison(G1, G2):
     if len(G1.nodes()) != len(G2.nodes()):
         return False
@@ -388,6 +491,7 @@ class PathSteps:
 
         return False
 
+"""
 G = nx.Graph()
 G.add_node(0)
 G.add_node(1)
@@ -433,3 +537,4 @@ test2 = WLColoringWithEdgeTypes(G, init_coloring, init_edge_types, init_active_s
 print(test2.coloring)
 
 print(paths_comparison(G, G2))
+"""
