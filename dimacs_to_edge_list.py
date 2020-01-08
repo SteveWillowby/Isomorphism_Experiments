@@ -23,3 +23,5 @@ def convert(input_file_name, output_file_name):
 
     input_file.close()
     output_file.close()
+
+# convert(sys.argv[1], sys.argv[2])
