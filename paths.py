@@ -86,6 +86,7 @@ def shortest_paths_comparison(G1, G2):
         prev_G1_visited_sets = [set(v) for v in G1_visited_sets]
         prev_unfinished = set(G1_unfinished)
         for unfinished_node in prev_unfinished:
+            transmitted = False
             for neighbor in G1_neighbors_lists[unfinished_node]:
                 if neighbor not in prev_unfinished:
                     continue
@@ -99,16 +100,22 @@ def shortest_paths_comparison(G1, G2):
                     else:
                         print("I THINK THIS SHOULDN'T HAPPEN!")
                         G1_edge_labels[edge][-1][1] += transmission_size
+                    transmitted = True
+                    G1_unfinished.add(neighbor)
 
                 G1_visited_sets[neighbor] |= prev_G1_visited_sets[unfinished_node]
                 if len(G1_visited_sets[neighbor]) == len(G1_nodes):
                     G1_unfinished.discard(neighbor)
+
+            if not transmitted:
+                G1_unfinished.discard(unfinished_node)
         path_length += 1
     path_length = 1
     while len(G2_unfinished) > 0:
         prev_G2_visited_sets = [set(v) for v in G2_visited_sets]
         prev_unfinished = list(G2_unfinished)
         for unfinished_node in prev_unfinished:
+            transmitted = False
             for neighbor in G2_neighbors_lists[unfinished_node]:
                 if neighbor not in prev_unfinished:
                     continue
@@ -123,9 +130,15 @@ def shortest_paths_comparison(G1, G2):
                         print("I THINK THIS SHOULDNT HAPPEN!")
                         G2_edge_labels[edge][-1][1] += transmission_size
 
+                    transmitted = True
+                    G2_unfinished.add(neighbor)
+
                 G2_visited_sets[neighbor] |= prev_G2_visited_sets[unfinished_node]
                 if len(G2_visited_sets[neighbor]) == len(G2_nodes):
                     G2_unfinished.discard(neighbor)
+
+            if not transmitted:
+                G2_unfinished.discard(unfinished_node)
         path_length += 1
 
     G1_edge_label_list = [(0, e) for e, l in G1_edge_labels.items()]
