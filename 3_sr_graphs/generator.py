@@ -2,7 +2,7 @@
 from pulp import *
 import sys
 
-def graph_with_n_nodes(NUM_NODES=7):
+def graph_with_n_nodes(NUM_NODES=7, force_1_regular=True):
 
     problem = LpProblem("Generate_a_3SR_Graph", LpMinimize)
     potential_edges = []
@@ -14,15 +14,19 @@ def graph_with_n_nodes(NUM_NODES=7):
                 threes.append((i,j,k))
 
     edge_vars = LpVariable.dicts("Potential_Edge_Vars", potential_edges, cat="Binary")
+    if force_1_regular:
+        degree = LpVariable.dicts("Degree", ["degree"], cat="Continuous")
 
-    # Here just to speed things up.
+    # Here to speed things up and/or enforce degree regularity.
     prev_edges = []
     for i in range(0, NUM_NODES):
         edges = []
         for j in range(0, NUM_NODES):
             if i != j:
                 edges.append((min(i,j), max(i,j)))
-        if i > 0:
+        if force_1_regular:
+            problem += degree["degree"] == lpSum({key: edge_vars[key] for key in edges})
+        elif i > 0:
             problem += lpSum({key: edge_vars[key] for key in prev_edges}) <= lpSum({key: edge_vars[key] for key in edges})
         prev_edges = edges
 
