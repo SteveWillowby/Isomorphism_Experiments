@@ -3,13 +3,13 @@ from networkx import utils
 # from networkx.algorithms.bipartite.generators import configuration_model
 from networkx.algorithms import isomorphism
 from networkx.algorithms.components import is_connected
-import numpy as np
 from some_srgs import *
 from faster_neighbors_revisited import *
 from neighbors_revisited import *
 from miyazaki_graphs import *
 from paths import *
-from test_nauty import *
+from run_nauty import *
+import graph_utils
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -55,20 +55,6 @@ def make_graph_with_same_degree_dist(G):
         elif len(G.edges()) == len(G_prime.edges()):
             #print("Graph creation successful")
             done = True
-    return G_prime
-
-def permute_labels_only(G):
-    nodes = list(G.nodes())
-    N = len(nodes)
-    permutation = np.random.permutation([i for i in range(0, N)])
-    # print(permutation)
-    G_prime = nx.Graph()
-    node_to_idx = {}
-    for i in range(0, N):
-        node_to_idx[nodes[i]] = i
-        G_prime.add_node(i)
-    for edge in G.edges():
-        G_prime.add_edge(permutation[node_to_idx[edge[0]]], permutation[node_to_idx[edge[1]]])
     return G_prime
 
 def peterson_graph():
@@ -124,7 +110,7 @@ base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-#COMPARISONS = [(base_0100_a, permute_labels_only(base_0100_a)), (base_1000_a, permute_labels_only(base_1000_a))]
+#COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
 #COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
 
 for i in range(0, len(COMPARISONS)):
@@ -148,11 +134,11 @@ for i in range(0, len(COMPARISONS)):
             continue
         good = True
         G_prime = make_graph_with_same_degree_dist(G)
-        # G_prime = permute_labels_only(G)
+        # G_prime = graph_utils.permute_node_labels(G)
     """
 
     (G, G_prime) = COMPARISONS[i]
-    G_prime = permute_labels_only(G_prime)
+    G_prime = graph_utils.permute_node_labels(G_prime)
     #print("Starting prediction")
     #c_desc_G = FasterNeighborsRevisited(G)
     #print("...")
