@@ -105,7 +105,7 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
             next_color += 1
 
         if next_color == len(color_to_nodes):
-            print("Stopping due to color max.")
+            # print("Stopping due to color max.")
             break
 
         new_active = set([])

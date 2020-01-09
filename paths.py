@@ -148,21 +148,38 @@ def paths_comparison(G1, G2):
         if not alg_utils.jointly_further_sort_by_and_compare(G1_edge_types, G1_latest_steps, G2_edge_types, G2_latest_steps):
             print("Paths Check A Failed!")
             return False
-
+        """
         G1_WL_colors = [(0, n) for n in G1_nodes]
-        alg_utils.further_sort_by(G1_WL_colors, G1_coloring)
+        alg_utils.further_sort_by(G1_WL_colors, {n: c for (c, n) in G1_coloring})
         G1_WL_colors = [(n, c) for (c, n) in G1_WL_colors]
         G1_WL_colors.sort()
-        G1_WL_colors = [x[0] for x in G1_WL_colors]
+        G1_WL_colors = [x[1] for x in G1_WL_colors]
         WL(G1, G1_WL_colors, {(s, t): c for (c, (s, t)) in G1_edge_types})
         G2_WL_colors = [(0, n) for n in G2_nodes]
-        alg_utils.further_sort_by(G2_WL_colors, G2_coloring)
+        alg_utils.further_sort_by(G2_WL_colors, {n: c for (c, n) in G2_coloring})
         G2_WL_colors = [(n, c) for (c, n) in G2_WL_colors]
         G2_WL_colors.sort()
-        G2_WL_colors = [x[0] for x in G2_WL_colors]
+        G2_WL_colors = [x[1] for x in G2_WL_colors]
         WL(G2, G2_WL_colors, {(s, t): c for (c, (s, t)) in G2_edge_types})
-        #G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
-        #G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        """
+        G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types}).coloring
+        G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types}).coloring
+        """
+        G1_WL_colors_comparison = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
+        for i in range(0, len(G1_nodes)):
+            for j in range(i + 1, len(G1_nodes)):
+                C1_says = G1_WL_colors[i] == G1_WL_colors[j]
+                C1_comp_says = G1_WL_colors_comparison.coloring[i] == G1_WL_colors_comparison.coloring[j]
+                if C1_says != C1_comp_says:
+                    print("Hey wat?? %s vs %s (%d, %d)" % (C1_says, C1_comp_says, i, j))
+        G2_WL_colors_comparison = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        for i in range(0, len(G2_nodes)):
+            for j in range(i + 1, len(G2_nodes)):
+                C2_says = G2_WL_colors[i] == G2_WL_colors[j]
+                C2_comp_says = G2_WL_colors_comparison.coloring[i] == G2_WL_colors_comparison.coloring[j]
+                if C2_says != C2_comp_says:
+                    print("Hey wat?? %s vs %s (%d, %d)" % (C2_says, C2_comp_says, i, j))
+        """
         if not alg_utils.jointly_further_sort_by_and_compare(G1_coloring, G1_WL_colors, G2_coloring, G2_WL_colors):
             print("Color Check B Failed!")
             return False
