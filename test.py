@@ -10,6 +10,7 @@ from miyazaki_graphs import *
 from paths import *
 from run_nauty import *
 import graph_utils
+import time
 
 def make_graph_with_same_degree_dist(G):
     G_sequence = list(d for n, d in G.degree())
@@ -100,6 +101,7 @@ COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100
 #COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
+bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
 bench_d3_b = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-2.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
@@ -109,6 +111,22 @@ base_0100_a = nx.Graph(base_0100_a)
 base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
+
+start_time = time.time()
+for i in range(0, 20):
+    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
+    WL(bench_d3_a, coloring)
+print(time.time() - start_time)
+
+coloring = {n: 0 for n in bench_d3_a.nodes()}
+edge_types = {}
+for (a, b) in bench_d3_a.edges():
+    edge_types[(a, b)] = 0
+    edge_types[(b, a)] = 0
+start_time = time.time()
+for i in range(0, 20):
+    init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types).coloring
+print(time.time() - start_time)
 
 #COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
 #COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
