@@ -112,17 +112,18 @@ base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-start_time = time.time()
-for i in range(0, 20):
-    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
-    WL(bench_d3_a, coloring)
-print(time.time() - start_time)
-
-coloring = {n: 0 for n in bench_d3_a.nodes()}
 edge_types = {}
 for (a, b) in bench_d3_a.edges():
     edge_types[(a, b)] = 0
     edge_types[(b, a)] = 0
+
+start_time = time.time()
+for i in range(0, 20):
+    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
+    WL(bench_d3_a, coloring, edge_types=edge_types)
+print(time.time() - start_time)
+
+coloring = {n: 0 for n in bench_d3_a.nodes()}
 start_time = time.time()
 for i in range(0, 20):
     init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types).coloring
