@@ -25,6 +25,11 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
         if node_to_color[node] >= next_color:
             next_color = node_to_color[node] + 1
 
+    for i in range(0, next_color):
+        if len(color_to_nodes[i]) == 0:
+            print("ERRONEOUS INPUT! MISSING COLOR %d in coloring_list passed to WL()" % i)
+    
+
     color_counts = [0 for i in range(0, len(nodes))]
     used_full_color = [False for i in range(0, len(nodes))]
 
@@ -44,6 +49,7 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
         new_colors.sort()
 
         had_a_change = False
+        last_was_a_pass = True
 
         old_color = new_colors[0][0][0]
         on_first_in_partition = True
@@ -54,6 +60,11 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
             color_to_nodes[old_color].remove(new_colors[0][1])
             color_to_nodes[next_color].add(new_colors[0][1])
             had_a_change = True
+            last_was_a_pass = False
+            if len(color_to_nodes[old_color]) == 0:
+                print("B")
+                print(on_first_in_partition)
+                print(full_color)
 
         used_full_color[old_color] = False
         color_counts[old_color] = 0
@@ -75,17 +86,27 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
                 on_first_in_partition = False
 
             if on_first_in_partition and full_color:
-                pass
+                last_was_a_pass = True
             else:
-                had_a_change = True
                 node_to_color[node] = next_color 
                 color_to_nodes[old_color].remove(node)
                 color_to_nodes[next_color].add(node)
+                had_a_change = True
+                last_was_a_pass = False
+                if len(color_to_nodes[old_color]) == 0:
+                    print("B")
+                    print(on_first_in_partition)
+                    print(full_color)
 
         if not had_a_change: # No changes! We're done!
             break
 
-        next_color += 1
+        if not last_was_a_pass:
+            next_color += 1
+
+        if next_color == len(color_to_nodes):
+            print("Stopping due to color max.")
+            break
 
         new_active = set([])
         for node in active:

@@ -146,7 +146,7 @@ for i in range(0, len(COMPARISONS)):
     #print("...")
     #predict_iso = c_desc_G == c_desc_G_prime
     print("Starting our prediction...")
-    predict_iso = shortest_paths_comparison(G, G_prime)
+    predict_iso = paths_comparison(G, G_prime)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
     print("Running Nauty...")

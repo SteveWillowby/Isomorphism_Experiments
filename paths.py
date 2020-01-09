@@ -1,43 +1,7 @@
 import networkx as nx
-
-def further_sort_by(l, d):
-    for i in range(0, len(l)):
-        l[i] = ((l[i][0], d[l[i][1]]), l[i][1])
-    l.sort()
-    new_id = 0
-    prev_label = l[0][0]
-    l[0] = (0, l[0][1])
-    for i in range(1, len(l)):
-        if l[i][0] != prev_label:
-            new_id += 1
-            prev_label = l[i][0]
-        l[i] = (new_id, l[i][1])
-
-def jointly_further_sort_by_and_compare(l1, d1, l2, d2):
-    for i in range(0, len(l1)):
-        l1[i] = ((l1[i][0], d1[l1[i][1]]), l1[i][1])
-        l2[i] = ((l2[i][0], d2[l2[i][1]]), l2[i][1])
-    l1.sort()
-    l2.sort()
-    all_equal = l1[0][0] == l2[0][0]
-    new_id_1 = 0
-    prev_label_1 = l1[0][0]
-    new_id_2 = 0
-    prev_label_2 = l2[0][0]
-    l1[0] = (0, l1[0][1])
-    l2[0] = (0, l2[0][1])
-    for i in range(1, len(l1)):
-        if l1[i][0] != l2[i][0]:
-            all_equal = False
-        if l1[i][0] != prev_label_1:
-            new_id_1 += 1
-            prev_label_1 = l1[i][0]
-        if l2[i][0] != prev_label_2:
-            new_id_2 += 1
-            prev_label_2 = l2[i][0]
-        l1[i] = (new_id_1, l1[i][1])
-        l2[i] = (new_id_2, l2[i][1])
-    return all_equal
+import alg_utils
+import graph_utils
+from weisfeiler_lehman import *
 
 def shortest_paths_comparison(G1, G2):
     if len(G1.nodes()) != len(G2.nodes()):
@@ -46,25 +10,10 @@ def shortest_paths_comparison(G1, G2):
         return False
 
     # Zero-index the graphs so we can use arrays rather than dicts.
-    G1_nodes = list(G1.nodes())
-    G2_nodes = list(G2.nodes())
-    G1_nodes.sort()
-    G2_nodes.sort()
-    G1_nodes_dict = {G1_nodes[i]: i for i in range(0, len(G1_nodes))}
-    G2_nodes_dict = {G2_nodes[i]: i for i in range(0, len(G2_nodes))}
-    new_G1 = nx.Graph()
-    new_G2 = nx.Graph()
-    for i in range(0, len(G1_nodes)):
-        new_G1.add_node(i)
-        new_G2.add_node(i)
-    for (a, b) in G1.edges():
-        new_G1.add_edge(G1_nodes_dict[a], G1_nodes_dict[b])
-    for (a, b) in G2.edges():
-        new_G2.add_edge(G2_nodes_dict[a], G2_nodes_dict[b])
-    G1 = new_G1
-    G1_nodes = [i for i in range(0, len(G1_nodes))]
-    G2 = new_G2
-    G2_nodes = [i for i in range(0, len(G2_nodes))]
+    G1 = graph_utils.zero_indexed_graph(G1)
+    G1_nodes = [i for i in range(0, len(G1.nodes()))]
+    G2 = graph_utils.zero_indexed_graph(G2)
+    G2_nodes = [i for i in range(0, len(G2.nodes()))]
 
     # Compute paths
     G1_neighbors_lists = [list(G1.neighbors(n)) for n in G1_nodes]
@@ -143,7 +92,7 @@ def shortest_paths_comparison(G1, G2):
 
     G1_edge_label_list = [(0, e) for e, l in G1_edge_labels.items()]
     G2_edge_label_list = [(0, e) for e, l in G2_edge_labels.items()]
-    if not jointly_further_sort_by_and_compare(G1_edge_label_list, G1_edge_labels, G2_edge_label_list, G2_edge_labels):
+    if not alg_utils.jointly_further_sort_by_and_compare(G1_edge_label_list, G1_edge_labels, G2_edge_label_list, G2_edge_labels):
         return False
 
     for (label, edge) in G1_edge_label_list:
@@ -151,8 +100,8 @@ def shortest_paths_comparison(G1, G2):
     for (label, edge) in G2_edge_label_list:
         G2_edge_labels[edge] = label
     
-    G1_canon = FlimsyCanonicalizer(G1, {n: 0 for n in G1_nodes}, G1_edge_labels)
-    G2_canon = FlimsyCanonicalizer(G2, {n: 0 for n in G2_nodes}, G2_edge_labels)
+    G1_canon = FlimsyCanonicalizer(G1, [0 for n in G1_nodes], G1_edge_labels)
+    G2_canon = FlimsyCanonicalizer(G2, [0 for n in G2_nodes], G2_edge_labels)
     return G1_canon.matrix == G2_canon.matrix
 
 def paths_comparison(G1, G2):
@@ -178,7 +127,7 @@ def paths_comparison(G1, G2):
         completed_iterations += 1
         G1_latest_paths = {n: G1_paths.access(completed_iterations, n, []) for n in G1_nodes}
         G2_latest_paths = {n: G2_paths.access(completed_iterations, n, []) for n in G2_nodes}
-        if not jointly_further_sort_by_and_compare(G1_coloring, G1_latest_paths, G2_coloring, G2_latest_paths):
+        if not alg_utils.jointly_further_sort_by_and_compare(G1_coloring, G1_latest_paths, G2_coloring, G2_latest_paths):
             print("Color Check A Failed!")
             return False
 
@@ -196,18 +145,30 @@ def paths_comparison(G1, G2):
                 G2_latest_steps[(s, t)] = G2_paths.steps[completed_iterations][(s, t)]
             else:
                 G2_latest_steps[(s, t)] = 0
-        if not jointly_further_sort_by_and_compare(G1_edge_types, G1_latest_steps, G2_edge_types, G2_latest_steps):
+        if not alg_utils.jointly_further_sort_by_and_compare(G1_edge_types, G1_latest_steps, G2_edge_types, G2_latest_steps):
             print("Paths Check A Failed!")
             return False
 
-        G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
-        G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
-        if not jointly_further_sort_by_and_compare(G1_coloring, G1_WL_colors.coloring, G2_coloring, G2_WL_colors.coloring):
+        G1_WL_colors = [(0, n) for n in G1_nodes]
+        alg_utils.further_sort_by(G1_WL_colors, G1_coloring)
+        G1_WL_colors = [(n, c) for (c, n) in G1_WL_colors]
+        G1_WL_colors.sort()
+        G1_WL_colors = [x[0] for x in G1_WL_colors]
+        WL(G1, G1_WL_colors, {(s, t): c for (c, (s, t)) in G1_edge_types})
+        G2_WL_colors = [(0, n) for n in G2_nodes]
+        alg_utils.further_sort_by(G2_WL_colors, G2_coloring)
+        G2_WL_colors = [(n, c) for (c, n) in G2_WL_colors]
+        G2_WL_colors.sort()
+        G2_WL_colors = [x[0] for x in G2_WL_colors]
+        WL(G2, G2_WL_colors, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        #G1_WL_colors = WLColoringWithEdgeTypes(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
+        #G2_WL_colors = WLColoringWithEdgeTypes(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+        if not alg_utils.jointly_further_sort_by_and_compare(G1_coloring, G1_WL_colors, G2_coloring, G2_WL_colors):
             print("Color Check B Failed!")
             return False
         if completed_iterations == 1 or prev_max_color < G1_coloring[-1][0]:
-            G1_partial_canon = FlimsyCanonicalizer(G1, {n: c for (c, n) in G1_coloring}, {(s, t): c for (c, (s, t)) in G1_edge_types})
-            G2_partial_canon = FlimsyCanonicalizer(G2, {n: c for (c, n) in G2_coloring}, {(s, t): c for (c, (s, t)) in G2_edge_types})
+            G1_partial_canon = FlimsyCanonicalizer(G1, G1_WL_colors, {(s, t): c for (c, (s, t)) in G1_edge_types})
+            G2_partial_canon = FlimsyCanonicalizer(G2, G2_WL_colors, {(s, t): c for (c, (s, t)) in G2_edge_types})
             if G1_partial_canon.matrix == G2_partial_canon.matrix:
                 print("A total of %d orbits found" % (G1_coloring[-1][0] + 1))
                 return True
@@ -221,18 +182,19 @@ class FlimsyCanonicalizer:
 
     def __init__(self, G, init_coloring, edge_types):
         nodes = list(G.nodes())
-        sorted_color_node_pairs = [(init_coloring[n], n) for n in nodes]
-        sorted_color_node_pairs.sort()
+        sorted_color_node_pairs = [(0, n) for n in nodes]
+        alg_utils.further_sort_by(sorted_color_node_pairs, init_coloring)
         final_node_order = []
-        coloring = init_coloring
+        coloring = [0 for n in nodes]
+        for (c, n) in sorted_color_node_pairs:
+            coloring[n] = c
 
         while len(sorted_color_node_pairs) > 0:
             final_node_order.append(sorted_color_node_pairs[-1][1])
             sorted_color_node_pairs.pop()
             if len(sorted_color_node_pairs) > 0:
-                new_colors = WLColoringWithEdgeTypes(G, coloring, edge_types, init_active_set=set([final_node_order[-1]]))
-                coloring = new_colors.coloring
-                further_sort_by(sorted_color_node_pairs, coloring)
+                WL(G, coloring, edge_types, init_active_set=set([final_node_order[-1]]))
+                alg_utils.further_sort_by(sorted_color_node_pairs, coloring)
         self.final_node_order = final_node_order
         self.matrix = self.node_order_to_matrix(G, final_node_order)
 
