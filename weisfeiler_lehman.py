@@ -14,7 +14,7 @@ import networkx as nx
 # For example, if node x has a unique color, and init_active_set is set([x]), nothing
 # will change.
 # I recommend just making a color unique OR being sure you already ran WL without an init_active_set.
-def WL(G, coloring_list, edge_types=None, init_active_set=None):
+def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparable_output=False):
 
     nodes = [i for i in range(0, len(G.nodes()))]
     active = set(nodes)
@@ -125,6 +125,17 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None):
                         new_active.add(neighbor)
         active = new_active
 
+    if not return_comparable_output:
+        return None
+
+    comparable_output = []
+    for node_set in color_to_nodes:
+        if len(node_set) == 0:
+            break
+        a_node = node_set.pop()
+        comparable_output.append(sorted([node_to_color[n] for n in neighbor_lists[a_node]]))
+    return comparable_output
+
 """
 G = nx.Graph()
 G.add_node(0)
@@ -155,6 +166,6 @@ for (a, b) in G.edges():
     edge_types[(b, a)] = 0
 edge_types[(1, 0)] = 1
 edge_types[(5, 4)] = 1
-WL(G, coloring, edge_types=edge_types, init_active_set=None)
+print(WL(G, coloring, edge_types=edge_types, init_active_set=None, return_comparable_output=True))
 print(coloring)
 """

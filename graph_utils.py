@@ -21,7 +21,16 @@ def zero_indexed_graph_and_coloring_list(G, C):
         new_G.add_node(i)
     for (a, b) in G.edges():
         new_G.add_edge(nodes_dict[a], nodes_dict[b])
+    color_replacements = {}
     new_C = [C[n] for n in nodes]
+    new_C.sort()
+    next_color = 0
+    color_replacements = {}
+    for c in new_C:
+        if c not in color_replacements:
+            color_replacements[c] = next_color
+            next_color += 1
+    new_C = [color_replacements[C[n]] for n in nodes]
     return new_G, new_C
 
 def permute_node_labels(G):
