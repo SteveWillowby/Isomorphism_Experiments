@@ -7,12 +7,21 @@ import networkx as nx
 # Note that the types can be different when pointing in the opposite direction.
 
 # Updates coloring_list in place.
+
+# BEWARE that if init_active_set is specified, the changes that would be implied by the
+# regular WL algorithm might not spread through the entire graph (i.e. if the boundary
+# at some iteration does not change).
+# For example, if node x has a unique color, and init_active_set is set([x]), nothing
+# will change.
+# I recommend just making a color unique OR being sure you already ran WL without an init_active_set.
 def WL(G, coloring_list, edge_types=None, init_active_set=None):
 
     nodes = [i for i in range(0, len(G.nodes()))]
     active = set(nodes)
+    active_hashes = {}
     if init_active_set is not None:
         active = init_active_set
+        active_hashes = {tuple(sorted(list(active))): 1}
 
     # non_active = set(nodes) - active
     neighbor_lists = [list(G.neighbors(n)) for n in nodes]
@@ -146,6 +155,6 @@ for (a, b) in G.edges():
     edge_types[(b, a)] = 0
 edge_types[(1, 0)] = 1
 edge_types[(5, 4)] = 1
-WL(G, coloring, edge_types=edge_types, init_active_set=set([0, 4]))
+WL(G, coloring, edge_types=edge_types, init_active_set=None)
 print(coloring)
 """
