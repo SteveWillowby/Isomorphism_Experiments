@@ -53,7 +53,7 @@ M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
 #COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+COMPARISONS = [(A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -67,28 +67,29 @@ base_0100_b = nx.Graph(base_0100_b)
 base_1000_a = nx.Graph(base_1000_a)
 base_1000_b = nx.Graph(base_1000_b)
 
-edge_types = {}
-for (a, b) in bench_d3_a.edges():
-    edge_types[(a, b)] = 0
-    edge_types[(b, a)] = 0
+if False:
+    edge_types = {}
+    for (a, b) in bench_d3_a.edges():
+        edge_types[(a, b)] = 0
+        edge_types[(b, a)] = 0
 
-coloring = {n: 0 for n in bench_d3_a.nodes()}
-start_time = time.time()
-for i in range(0, 30):
-    init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types, init_active_set=set([0])).coloring
-#the_c = [(0, n) for n in range(0, len(coloring))]
-#alg_utils.further_sort_by(the_c, init_coloring)
-#print([x[1] for x in sorted([(n, c) for n, c in the_c])])
-print("Old Code's Time")
-print(time.time() - start_time)
+    coloring = {n: 0 for n in bench_d3_a.nodes()}
+    start_time = time.time()
+    for i in range(0, 30):
+        init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types, init_active_set=set([0])).coloring
+    #the_c = [(0, n) for n in range(0, len(coloring))]
+    #alg_utils.further_sort_by(the_c, init_coloring)
+    #print([x[1] for x in sorted([(n, c) for n, c in the_c])])
+    print("Old Code's Time")
+    print(time.time() - start_time)
 
-start_time = time.time()
-for i in range(0, 30):
-    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
-    WL(bench_d3_a, coloring, edge_types=edge_types, init_active_set=set([0]))
-#print(coloring)
-print("New Code's Time")
-print(time.time() - start_time)
+    start_time = time.time()
+    for i in range(0, 30):
+        coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
+        WL(bench_d3_a, coloring, edge_types=edge_types, init_active_set=set([0]))
+    #print(coloring)
+    print("New Code's Time")
+    print(time.time() - start_time)
 
 #COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
 #COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
@@ -119,6 +120,8 @@ for i in range(0, len(COMPARISONS)):
 
     (G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
+    G3 = graph_utils.graph_union(G, G_prime)
+    thing1 = FasterNeighborsRevisited(G3)
     print("Starting prediction")
     c_desc_G = FasterNeighborsRevisited(G)
     print("...")

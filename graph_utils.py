@@ -33,6 +33,16 @@ def zero_indexed_graph_and_coloring_list(G, C):
     new_C = [color_replacements[C[n]] for n in nodes]
     return new_G, new_C
 
+# Assumes zero-indexed input
+def graph_union(G1, G2):
+    G3 = nx.Graph(G1)
+    node_start = len(G3.nodes())
+    for node in G2.nodes():
+        G3.add_node(node + node_start)
+    for (a, b) in G2.edges():
+        G3.add_edge(a + node_start, b + node_start)
+    return G3
+
 def permute_node_labels(G):
     nodes = list(G.nodes())
     N = len(nodes)

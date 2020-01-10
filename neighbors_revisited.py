@@ -29,6 +29,9 @@ class NeighborsRevisited:
             if self.nodewise:
                 print(counter)
             counter += 1
+        if self.nodewise:
+            all_labels = set([l for n, l in self.internal_labels.items()])
+            print("There were a total of %d labels" % len(all_labels))
 
     def get_new_ids_in_order(self):
         ids = []

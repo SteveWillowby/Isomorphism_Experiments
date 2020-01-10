@@ -133,7 +133,7 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
         if len(node_set) == 0:
             break
         a_node = node_set.pop()
-        comparable_output.append(sorted([node_to_color[n] for n in neighbor_lists[a_node]]))
+        comparable_output.append((len(node_set) + 1, sorted([node_to_color[n] for n in neighbor_lists[a_node]])))
     return comparable_output
 
 """
