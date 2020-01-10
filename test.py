@@ -10,53 +10,8 @@ from miyazaki_graphs import *
 from paths import *
 from run_nauty import *
 import graph_utils
+import alg_utils
 import time
-
-def make_graph_with_same_degree_dist(G):
-    G_sequence = list(d for n, d in G.degree())
-    G_sequence.sort()
-    sorted_G_sequence = list((d, n) for n, d in G.degree())
-    sorted_G_sequence.sort(key=lambda tup: tup[0])
-    done = False
-    while not done:
-        G_prime = nx.configuration_model(G_sequence)
-        G_prime = nx.Graph(G_prime)
-        G_prime.remove_edges_from(G_prime.selfloop_edges())
-        tries = 10
-        while tries > 0 and (len(G.edges()) != len(G_prime.edges())):
-            sorted_G_prime_sequence = list((d, n) for n, d in G_prime.degree())
-            sorted_G_prime_sequence.sort(key=lambda tup: tup[0])
-            #print("Sorted G_sequence:")
-            #print(sorted_G_sequence)
-            #print("Sorted G_prime_sequence:")
-            #print(sorted_G_prime_sequence)
-            missing = []
-            for i in range(0, len(G.nodes())):
-                while sorted_G_sequence[i][0] > sorted_G_prime_sequence[i][0]:
-                    missing.append(sorted_G_prime_sequence[i][1])
-                    sorted_G_prime_sequence[i] = (sorted_G_prime_sequence[i][0] + 1, sorted_G_prime_sequence[i][1])
-            missing = np.random.permutation(missing)
-            if len(missing) % 2 != 0:
-                print("Sanity issue! Alert!")
-            #print("Edges before:")
-            #print(G_prime.edges())
-            #print("Missing:")
-            #print(missing)
-            for i in range(0, int(len(missing) / 2)):
-                G_prime.add_edge(missing[2*i], missing[2*i + 1])
-            G_prime = nx.Graph(G_prime)
-            G_prime.remove_edges_from(G_prime.selfloop_edges())
-            #print("Edges after:")
-            #print(G_prime.edges())
-            #if not is_connected(G_prime):
-                #print("Bad: G_prime disconnected")
-            tries -= 1
-        if not is_connected(G_prime):
-            pass
-        elif len(G.edges()) == len(G_prime.edges()):
-            #print("Graph creation successful")
-            done = True
-    return G_prime
 
 def peterson_graph():
     G = nx.Graph()
@@ -97,8 +52,8 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
-COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-#COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
+#COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
+COMPARISONS = [(A1,A2),(A1,A3),(A1,A4),(A2,A3),(A2,A4),(A3,A4)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -117,16 +72,22 @@ for (a, b) in bench_d3_a.edges():
     edge_types[(a, b)] = 0
     edge_types[(b, a)] = 0
 
-start_time = time.time()
-for i in range(0, 20):
-    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
-    WL(bench_d3_a, coloring, edge_types=edge_types)
-print(time.time() - start_time)
-
 coloring = {n: 0 for n in bench_d3_a.nodes()}
 start_time = time.time()
-for i in range(0, 20):
-    init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types).coloring
+for i in range(0, 30):
+    init_coloring = WLColoringWithEdgeTypes(bench_d3_a, coloring, edge_types, init_active_set=set([0])).coloring
+#the_c = [(0, n) for n in range(0, len(coloring))]
+#alg_utils.further_sort_by(the_c, init_coloring)
+#print([x[1] for x in sorted([(n, c) for n, c in the_c])])
+print("Old Code's Time")
+print(time.time() - start_time)
+
+start_time = time.time()
+for i in range(0, 30):
+    coloring = [0 for i in range(0, len(bench_d3_a.nodes()))]
+    WL(bench_d3_a, coloring, edge_types=edge_types, init_active_set=set([0]))
+#print(coloring)
+print("New Code's Time")
 print(time.time() - start_time)
 
 #COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
@@ -158,15 +119,15 @@ for i in range(0, len(COMPARISONS)):
 
     (G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
-    #print("Starting prediction")
-    #c_desc_G = FasterNeighborsRevisited(G)
-    #print("...")
-    #c_desc_G_prime = FasterNeighborsRevisited(G_prime)
-    #print("...")
-    #predict_iso = c_desc_G == c_desc_G_prime
-    print("Starting our prediction...")
-    predict_iso = paths_comparison(G, G_prime)
-    print("Got prediction: %s" % predict_iso)
+    print("Starting prediction")
+    c_desc_G = FasterNeighborsRevisited(G)
+    print("...")
+    c_desc_G_prime = FasterNeighborsRevisited(G_prime)
+    print("...")
+    predict_iso = c_desc_G == c_desc_G_prime
+    #print("Starting our prediction...")
+    #predict_iso = paths_comparison(G, G_prime)
+    #print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
     print("Running Nauty...")
     actual_iso = nauty_isomorphism_check(G, G_prime)
