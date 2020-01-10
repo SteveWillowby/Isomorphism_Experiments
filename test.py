@@ -53,7 +53,7 @@ M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
 #COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-COMPARISONS = [(A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -120,8 +120,8 @@ for i in range(0, len(COMPARISONS)):
 
     (G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
-    G3 = graph_utils.graph_union(G, G_prime)
-    thing1 = FasterNeighborsRevisited(G3)
+    # G3 = graph_utils.graph_union(G, G_prime)
+    # thing1 = FasterNeighborsRevisited(G3)
     print("Starting prediction")
     c_desc_G = FasterNeighborsRevisited(G)
     print("...")

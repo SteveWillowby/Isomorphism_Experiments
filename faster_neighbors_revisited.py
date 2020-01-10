@@ -62,7 +62,7 @@ class FasterNeighborsRevisited:
             if self.are_new_labels_effectively_the_same(new_labels):
                 if self.nodewise == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
-                    print("There were a total of %d labels" % (len(set([l for n, l in new_labels.items()]))))
+                    print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.initial_G.nodes()]))))
                 break
             WL(self.G, new_labels)
             self.internal_labels = new_labels
@@ -259,7 +259,7 @@ class FasterNeighborsRevisited:
         return self.full_comparison(other) > -1
 
     def set_canonical_form(self):
-        print(self.internal_labels)
+        print(sorted([l for n, l in self.internal_labels.items()]))
         ordering = [[n, 0] for n in self.initial_nodes]
         self.further_sort(ordering, self.internal_labels)
         # print("Initial Ordering:")
@@ -277,7 +277,6 @@ class FasterNeighborsRevisited:
                 #print("NOT READY!")
             #print(ordering)
             # alg_utils.further_sort_by(ordering, {x[0]: x[1] for x in  ordering})
-            """
             self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
 
             while selected_index < len(ordering):
@@ -291,7 +290,6 @@ class FasterNeighborsRevisited:
                         break
                 else:
                     break
-            """
             # print("Selected index is %d" % selected_index)
             # ....TO HERE[A] is all code to make things faster. It's not strictly necessary.
 
