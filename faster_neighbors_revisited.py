@@ -259,7 +259,14 @@ class FasterNeighborsRevisited:
         return self.full_comparison(other) > -1
 
     def set_canonical_form(self):
-        print(sorted([l for n, l in self.internal_labels.items()]))
+        l = sorted([self.internal_labels[n] for n in self.initial_G.nodes()])
+        print(len(l))
+        prev_i = 0
+        for i in range(1, len(l)):
+            if l[i] != l[i-1]:
+                print(i - prev_i)
+                prev_i = i
+        print(len(l) - prev_i)
         ordering = [[n, 0] for n in self.initial_nodes]
         self.further_sort(ordering, self.internal_labels)
         # print("Initial Ordering:")

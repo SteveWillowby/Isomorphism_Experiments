@@ -123,9 +123,9 @@ for i in range(0, len(COMPARISONS)):
     # G3 = graph_utils.graph_union(G, G_prime)
     # thing1 = FasterNeighborsRevisited(G3)
     print("Starting prediction")
-    c_desc_G = NeighborsRevisited(G)
+    c_desc_G = FasterNeighborsRevisited(G)
     print("...")
-    c_desc_G_prime = NeighborsRevisited(G_prime)
+    c_desc_G_prime = FasterNeighborsRevisited(G_prime)
     print("...")
     predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")

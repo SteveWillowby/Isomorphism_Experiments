@@ -36,7 +36,7 @@ def _build_dreadnaut_file(g):
     file_content.append("+c")
     file_content.append("x")
     file_content.append("o")
-    file_content.append("b")
+    # file_content.append("b")
     # print(file_content)
     return file_content
 
@@ -53,6 +53,7 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
                           stdout=subprocess.PIPE,
                           stderr=subprocess.DEVNULL)
     res = proc.stdout.decode()
+    print(res)
     lines = res.strip().split("\n")
     info = lines[0]
     orbits = lines[2]
