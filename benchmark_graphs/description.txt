@@ -1,0 +1,7 @@
+The graphs come in pairs, which are recognizable by the last index in the file name.
+
+This allows a performance analysis of solvers for which only an isomorphism test is available and no canonization option.
+
+For the "cfi-rigid-r2" and "cfi-rigid-t2" series these pairs are isomorphic.
+
+For the other families the graphs come (with high probability) in pairs of non-isomorphic graphs.
