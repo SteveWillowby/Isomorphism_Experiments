@@ -53,7 +53,7 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
                           stdout=subprocess.PIPE,
                           stderr=subprocess.DEVNULL)
     res = proc.stdout.decode()
-    print(res)
+    # print(res)
     lines = res.strip().split("\n")
     info = lines[0]
     orbits = lines[2]
@@ -120,8 +120,13 @@ def nauty_isomorphism_check(G1, G2):
 
     n1, _, _, _ = nauty_compute(G3)
     n2, _, _, _ = nauty_compute(G4)
-    print(n1)
-    print(n2)
+
+    count = 0
+    for node in G4.nodes():
+        if len(list(G4.neighbors(node))) == len(G4.nodes()) - 1:
+            count += 1
+    print("Total Number of Orbits Nauty Found: %d" % (n2 - 1 + int(count > 1)))
+    # print(n1)
     #print(CG2)
     return n1 == n2
 

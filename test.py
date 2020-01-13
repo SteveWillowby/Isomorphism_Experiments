@@ -37,6 +37,33 @@ def peterson_graph():
 
     return G
 
+def gen_graph_1():
+    G = nx.Graph()
+    for i in range(0, 9):
+        G.add_node(i)
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 3)
+    G.add_edge(3, 4)
+    G.add_edge(4, 5)
+    G.add_edge(5, 0)
+
+    G.add_edge(6, 0)
+    G.add_edge(6, 1)
+    G.add_edge(6, 3)
+    G.add_edge(6, 4)
+
+    G.add_edge(7, 1)
+    G.add_edge(7, 2)
+    G.add_edge(7, 4)
+    G.add_edge(7, 5)
+
+    G.add_edge(8, 2)
+    G.add_edge(8, 3)
+    G.add_edge(8, 5)
+    G.add_edge(8, 0)
+    return G
+
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
@@ -45,6 +72,7 @@ A4 = graph_from_srg_string(GRAPH_STRING_A4)
 # test = PathSteps(A2)
 
 Pet = peterson_graph()
+Gen1 = gen_graph_1()
 M2 = miyazaki_graph(2)
 M3 = miyazaki_graph(3)
 M4 = miyazaki_graph(4)
@@ -52,12 +80,12 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
-#COMPARISONS = [(Pet, Pet),(M2, M2),(M3,M3),(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+COMPARISONS = [(Gen1, Gen1), (Pet, Pet),(M2, M2),(M3,M3)] #(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
+# COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
-bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
-bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
-bench_d3_b = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-2.edge_list", create_using=nx.Graph, nodetype=int)
+#bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
+#bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
+#bench_d3_b = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-2.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
 base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
 base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_8000_a.edge_list", create_using=nx.Graph, nodetype=int)
