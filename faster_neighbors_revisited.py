@@ -1,6 +1,7 @@
 import networkx as nx
 import graph_utils
 import alg_utils
+from neighbors_revisited import *
 from weisfeiler_lehman import *
 
 class FasterNeighborsRevisited:
@@ -82,7 +83,15 @@ class FasterNeighborsRevisited:
                 if use_max:
                     l[node] = max(l) + 1
 
-                i = (self.internal_labels[node], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
+                exp = NeighborsRevisited(self.G, {i: self.nodewise_overlays[node][i] for i in self.nodes}, nodewise=False)
+                i = (self.internal_labels[node], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True))
+                i = (self.internal_labels[node], exp)
+                for j in self.nodes:
+                    for k in range(0, len(self.nodes)):
+                        exp_v = exp.internal_labels[j] == exp.internal_labels[k]
+                        i_v = self.nodewise_overlays[node][j] == self.nodewise_overlays[node][k]
+                        if exp_v != i_v:
+                            print("LERLKJELKRJEKLRJE")
                 # self.nodewise_overlays[node] = i[1].internal_labels
             else:
                 print("THIS SHOULD NO LONGER BE CALLED!")
