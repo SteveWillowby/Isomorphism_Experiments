@@ -42,7 +42,16 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
     color_counts = [0 for i in range(0, len(nodes))]
     used_full_color = [False for i in range(0, len(nodes))]
 
+    comparable_output = []
+    the_round = 0
+
     while len(active) > 0:
+        if return_comparable_output:
+            the_round += 1
+            if the_round == 2:
+                print(comparable_output)
+                exit(0)
+
         previous_partition_sizes = {node: len(color_to_nodes[node_to_color[node]]) for node in active}
 
         new_colors = []
@@ -70,21 +79,21 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
             color_to_nodes[next_color].add(new_colors[0][1])
             had_a_change = True
             last_was_a_pass = False
-            if len(color_to_nodes[old_color]) == 0:
-                print("B")
-                print(on_first_in_partition)
-                print(full_color)
+            if return_comparable_output:
+                comparable_output.append([the_round, next_color, 1, new_colors[0][0][1]])
 
         used_full_color[old_color] = False
         color_counts[old_color] = 0
 
         for i in range(1, len(new_colors)):
+            new_color_or_partition = False
             prev_old_color = old_color
             old_color = new_colors[i][0][0]
             node = new_colors[i][1]
             if prev_old_color != old_color:
                 if not on_first_in_partition: # If the previous partition actually used up a next_color
                     next_color += 1
+                new_color_or_partition = True
                 full_color = used_full_color[old_color]
                 used_full_color[old_color] = False
                 color_counts[old_color] = 0
@@ -92,7 +101,16 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
             elif new_colors[i][0][1] != new_colors[i - 1][0][1]:
                 if not on_first_in_partition or not full_color: # If we've used up a next_color in this partition.
                     next_color += 1
+                new_color_or_partition = True
                 on_first_in_partition = False
+
+            if new_color_or_partition and return_comparable_output:
+                if on_first_in_partition and full_color:
+                    comparable_output.append([the_round, old_color, 1, new_colors[i][0][1]])
+                else:
+                    comparable_output.append([the_round, next_color, 1, new_colors[i][0][1]])
+            elif return_comparable_output and len(comparable_output) > 0:
+                comparable_output[-1][2] += 1
 
             if on_first_in_partition and full_color:
                 last_was_a_pass = True
@@ -102,10 +120,6 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
                 color_to_nodes[next_color].add(node)
                 had_a_change = True
                 last_was_a_pass = False
-                if len(color_to_nodes[old_color]) == 0:
-                    print("B")
-                    print(on_first_in_partition)
-                    print(full_color)
 
         if not had_a_change: # No changes! We're done!
             break
@@ -128,12 +142,14 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
     if not return_comparable_output:
         return None
 
+    """
     comparable_output = []
     for node_set in color_to_nodes:
         if len(node_set) == 0:
             break
         a_node = node_set.pop()
         comparable_output.append((len(node_set) + 1, sorted([node_to_color[n] for n in neighbor_lists[a_node]])))
+    """
     return comparable_output
 
 """
