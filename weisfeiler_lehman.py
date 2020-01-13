@@ -48,9 +48,9 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
     while len(active) > 0:
         if return_comparable_output:
             the_round += 1
-            if the_round == 2:
-                print(comparable_output)
-                exit(0)
+            # if the_round == 2:
+                # print(comparable_output)
+                # exit(0)
 
         previous_partition_sizes = {node: len(color_to_nodes[node_to_color[node]]) for node in active}
 

@@ -36,24 +36,10 @@ class FasterNeighborsRevisited:
         if self.nodewise:
             overall_WL_coloring = list(self.internal_labels)
             WL(self.G, overall_WL_coloring)
-            #basic_overlay = FasterNeighborsRevisited(self.G, external_labels, nodewise=False)
-            #basic_overlay = basic_overlay.internal_labels
-            # print(self.external_labels)
             self.nodewise_overlays = []
             for node in self.nodes:
                 self.nodewise_overlays.append(list(overall_WL_coloring))
-                WL(self.G, self.nodewise_overlays[node], init_active_set=set([node]))
-                #path_labels = nx.single_source_shortest_path_length(self.G, node) # Do shortest paths computation to speed things up.
-                #max_dist = max([d for n, d in path_labels.items()]) + 1
-                #for n in self.nodes:
-                #    if n not in path_labels:
-                #        path_labels[n] = max_dist
-                #self.nodewise_overlays[node] = [path_labels[n] + basic_overlay[n] * len(self.nodes) for n in self.nodes]
-                #max_value = max(self.nodewise_overlays[node])
-                #self.nodewise_overlays[node][node] = max_value + 1
-                #self.nodewise_overlays[node] = [self.external_labels[n] for n in self.nodes] # Undo all the above.
-                #max_value = max(self.nodewise_overlays[node])
-                #self.nodewise_overlays[node][node] = max_value + 1
+        #        WL(self.G, self.nodewise_overlays[node], init_active_set=set([node]))
 
         counter = 0
         while True:
@@ -81,9 +67,21 @@ class FasterNeighborsRevisited:
                 #new_labels = [self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes]
                 #i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
                 new_overlay = [(self.nodewise_overlays[node][n], n) for n in self.nodes]
+
                 alg_utils.further_sort_by(new_overlay, self.internal_labels)
                 for (c, n) in new_overlay:
                     self.nodewise_overlays[node][n] = c
+
+                # This segment gives the node a unique color if it does not already have one.
+                l = self.nodewise_overlays[node]
+                use_max = False
+                for i in range(0, len(l)):
+                    if i != node and l[i] == l[node]:
+                        use_max = True
+                        break
+                if use_max:
+                    l[node] = max(l) + 1
+
                 i = (self.internal_labels[node], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
                 # self.nodewise_overlays[node] = i[1].internal_labels
             else:
