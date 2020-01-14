@@ -45,7 +45,7 @@ class NeighborsRevisited:
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
                 neighbors.sort()
-                i = (self.internal_labels[node], neighbors) # TODO: Consider whether referencing oneself is necessary.
+                i = (self.internal_labels[node], neighbors)
             ids.append((node, i))
         ids.sort(key=(lambda x: x[1]))
         return ids
