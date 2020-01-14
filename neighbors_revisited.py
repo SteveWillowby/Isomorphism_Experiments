@@ -53,15 +53,36 @@ class NeighborsRevisited:
     def assign_new_labels_for_sorted_ids(self, sorted_ids):
         new_labels = {}
         prev = None
+
+        s = self.next_numeric_label
+        idx = -1
+        prev_thingy = 0
+        if self.nodewise:
+            print("Partition sizes")
+        nodes = [sorted_ids[0][0]]
+
         for current in sorted_ids:
+            idx += 1
             if prev is None or prev != current[1]:
                 self.next_numeric_label += 1
                 self.label_definitions.append((self.next_numeric_label, current[1]))
                 self.label_counts.append(0)
+                if self.nodewise and idx > 0:
+                    print(idx - prev_thingy)
+                    if idx - prev_thingy == 16:
+                        print(nodes)
+                    nodes = []
+                    prev_thingy = idx
+            nodes.append(current[0])
 
             new_labels[current[0]] = self.next_numeric_label
             self.label_counts[-1] += 1
             prev = current[1]
+
+        if self.nodewise:
+            print(idx + 1 - prev_thingy)
+            print("Num Labels Found: %d" % (self.next_numeric_label - s))
+
         return new_labels
 
     # O(|V|)

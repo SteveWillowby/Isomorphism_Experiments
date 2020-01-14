@@ -37,33 +37,6 @@ def peterson_graph():
 
     return G
 
-def gen_graph_1():
-    G = nx.Graph()
-    for i in range(0, 9):
-        G.add_node(i)
-    G.add_edge(0, 1)
-    G.add_edge(1, 2)
-    G.add_edge(2, 3)
-    G.add_edge(3, 4)
-    G.add_edge(4, 5)
-    G.add_edge(5, 0)
-
-    G.add_edge(6, 0)
-    G.add_edge(6, 1)
-    G.add_edge(6, 3)
-    G.add_edge(6, 4)
-
-    G.add_edge(7, 1)
-    G.add_edge(7, 2)
-    G.add_edge(7, 4)
-    G.add_edge(7, 5)
-
-    G.add_edge(8, 2)
-    G.add_edge(8, 3)
-    G.add_edge(8, 5)
-    G.add_edge(8, 0)
-    return G
-
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
@@ -72,7 +45,8 @@ A4 = graph_from_srg_string(GRAPH_STRING_A4)
 # test = PathSteps(A2)
 
 Pet = peterson_graph()
-Gen1 = gen_graph_1()
+Gen1 = graph_utils.gen_graph_1()
+Gen1Cycles = graph_utils.gen_graph_1_cycles()
 M2 = miyazaki_graph(2)
 M3 = miyazaki_graph(3)
 M4 = miyazaki_graph(4)
@@ -82,13 +56,14 @@ M100 = miyazaki_graph(100)
 
 print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
 print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
+print("Is Gen1Cycles 3SR? %s" % graph_utils.is_3_SR(Gen1Cycles))
 print("Is M3 3SR? %s" % graph_utils.is_3_SR(M3))
 print("Is A1 3SR? %s" % graph_utils.is_3_SR(A1))
 print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
 print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
 print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
 
-COMPARISONS = [(Gen1, Gen1), (Pet, Pet),(M2, M2),(M3,M3)] #(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
+COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3)] #(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
 #bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)

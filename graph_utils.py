@@ -141,3 +141,44 @@ def is_3_SR(G):
                         if identifier not in the_dict_to_compare_to or the_dict_to_compare_to[identifier] != count:
                             return False
     return True
+
+def gen_graph_1():
+    G = nx.Graph()
+    for i in range(0, 9):
+        G.add_node(i)
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 3)
+    G.add_edge(3, 4)
+    G.add_edge(4, 5)
+    G.add_edge(5, 0)
+
+    G.add_edge(6, 0)
+    G.add_edge(6, 1)
+    G.add_edge(6, 3)
+    G.add_edge(6, 4)
+
+    G.add_edge(7, 1)
+    G.add_edge(7, 2)
+    G.add_edge(7, 4)
+    G.add_edge(7, 5)
+
+    G.add_edge(8, 2)
+    G.add_edge(8, 3)
+    G.add_edge(8, 5)
+    G.add_edge(8, 0)
+    return G
+
+def gen_graph_1_cycles():
+    G1 = gen_graph_1()
+    G2 = graph_union(G1, G1)
+    G3 = graph_union(G1, G2)
+    for i in range(0, 9):
+        G3.add_edge(i, 9 + i)
+        G3.add_edge(9 + i, 18 + i)
+        G3.add_edge(i, 18 + i)
+    #for i in range(0, 5):
+    #    G3.add_edge(i, 18 + (i + 1) % 5)
+    #for i in range(5, 9):
+    #    G3.add_edge(i, 18 + 5 + ((i - 5) + 1) % 4)
+    return G3
