@@ -63,15 +63,15 @@ class FasterNeighborsRevisited:
 
             original_labels = {i: self.nodewise_overlays[node][i] for i in self.nodes}
 
-            new_overlay = [(self.nodewise_overlays[node][n], n) for n in self.nodes]
-            if self.counter >= 1:
+            new_overlay = [(self.internal_labels[n], n) for n in self.nodes]
+            if self.counter >= 80:
                 new_overlay = [(0, n) for n in self.nodes]
             max_c = max([c for (c, n) in new_overlay])
             for i in range(0, len(new_overlay)):
                 if new_overlay[i][1] == node:
                     new_overlay[i] = (max_c + 1, node)
 
-            alg_utils.further_sort_by(new_overlay, self.internal_labels)
+            alg_utils.further_sort_by(new_overlay, self.nodewise_overlays[node])
             for (c, n) in new_overlay:
                 self.nodewise_overlays[node][n] = c
 
