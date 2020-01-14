@@ -36,7 +36,7 @@ class FasterNeighborsRevisited:
             self.nodewise_overlays = []
             for node in self.nodes:
                 self.nodewise_overlays.append(list(overall_WL_coloring))
-        #        WL(self.G, self.nodewise_overlays[node], init_active_set=set([node]))
+                WL(self.G, self.nodewise_overlays[node], init_active_set=set([node]))
 
         self.counter = 0
         while True:
@@ -63,8 +63,6 @@ class FasterNeighborsRevisited:
             original_labels = {i: (self.internal_labels[i], self.nodewise_overlays[node][i]) for i in self.nodes}
 
             new_overlay = [(self.nodewise_overlays[node][n], n) for n in self.nodes]
-            if self.counter >= 80:
-                new_overlay = [(0, n) for n in self.nodes]
             max_c = max([c for (c, n) in new_overlay])
             for i in range(0, len(new_overlay)):
                 if new_overlay[i][1] == node:
@@ -74,30 +72,15 @@ class FasterNeighborsRevisited:
             for (c, n) in new_overlay:
                 self.nodewise_overlays[node][n] = c
 
-            """
-            # This segment gives the node a unique color if it does not already have one.
-            l = self.nodewise_overlays[node]
-            node_is_singleton = False
-            for i in range(0, len(l)):
-                if i != node and l[i] == l[node]:
-                    use_max = True
-                    break
-            if use_max:
-                l[node] = max(l) + 1
-            else:
-                max_l
-            """
-
-            exp = NeighborsRevisited(self.G, {i: self.nodewise_overlays[node][i] for i in self.nodes}, nodewise=False)
-
-            new_labels = exp.internal_labels
-            # comp_output = WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)
+            # exp = NeighborsRevisited(self.G, {i: self.nodewise_overlays[node][i] for i in self.nodes}, nodewise=False)
 
             before_after_comparison = BeforeAfterLabels(original_labels, self.nodewise_overlays[node])
+            comp_output = WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)
 
-            # i = (self.internal_labels[node], comp_output)
-            i = (self.internal_labels[node], exp, before_after_comparison)
-            self.nodewise_overlays[node] = exp.internal_labels
+
+            i = (self.internal_labels[node], comp_output, before_after_comparison)
+            # i = (self.internal_labels[node], exp, before_after_comparison)
+            # self.nodewise_overlays[node] = exp.internal_labels
             """
             for j in self.nodes:
                 for k in range(0, len(self.nodes)):
