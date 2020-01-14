@@ -49,7 +49,6 @@ class FasterNeighborsRevisited:
                 break
             # WL(self.G, new_labels)
             self.internal_labels = new_labels
-            print(self.internal_labels)
             self.counter += 1
 
         if self.mode == "Master":
@@ -61,9 +60,9 @@ class FasterNeighborsRevisited:
             #new_labels = [self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes]
             #i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
 
-            original_labels = {i: self.nodewise_overlays[node][i] for i in self.nodes}
+            original_labels = {i: (self.internal_labels[i], self.nodewise_overlays[node][i]) for i in self.nodes}
 
-            new_overlay = [(self.internal_labels[n], n) for n in self.nodes]
+            new_overlay = [(self.nodewise_overlays[node][n], n) for n in self.nodes]
             if self.counter >= 80:
                 new_overlay = [(0, n) for n in self.nodes]
             max_c = max([c for (c, n) in new_overlay])
@@ -71,7 +70,7 @@ class FasterNeighborsRevisited:
                 if new_overlay[i][1] == node:
                     new_overlay[i] = (max_c + 1, node)
 
-            alg_utils.further_sort_by(new_overlay, self.nodewise_overlays[node])
+            alg_utils.further_sort_by(new_overlay, self.internal_labels)
             for (c, n) in new_overlay:
                 self.nodewise_overlays[node][n] = c
 
@@ -91,13 +90,13 @@ class FasterNeighborsRevisited:
 
             exp = NeighborsRevisited(self.G, {i: self.nodewise_overlays[node][i] for i in self.nodes}, nodewise=False)
 
-            # new_labels = exp.internal_labels
+            new_labels = exp.internal_labels
             # comp_output = WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)
 
-            # before_after_comparison = BeforeAfterLabels(original_labels, self.nodewise_overlays[node])
+            before_after_comparison = BeforeAfterLabels(original_labels, self.nodewise_overlays[node])
 
             # i = (self.internal_labels[node], comp_output)
-            i = (self.internal_labels[node], exp)
+            i = (self.internal_labels[node], exp, before_after_comparison)
             self.nodewise_overlays[node] = exp.internal_labels
             """
             for j in self.nodes:
