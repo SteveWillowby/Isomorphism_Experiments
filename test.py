@@ -80,6 +80,14 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
+print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
+print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
+print("Is M3 3SR? %s" % graph_utils.is_3_SR(M3))
+print("Is A1 3SR? %s" % graph_utils.is_3_SR(A1))
+print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
+print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
+print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
+
 COMPARISONS = [(Gen1, Gen1), (Pet, Pet),(M2, M2),(M3,M3)] #(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 

@@ -102,3 +102,42 @@ def make_graph_with_same_degree_dist(G):
             #print("Graph creation successful")
             done = True
     return G_prime
+
+
+def is_3_SR(G):
+    nodes = list(G.nodes())
+    nodes.sort()
+    dicts = [{}, {}, {}, {}]
+    for i in range(0, len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            for k in range(j + 1, len(nodes)):
+                ij = int(G.has_edge(i, j))
+                ik = int(G.has_edge(i, k))
+                jk = int(G.has_edge(j, k))
+                num_edges = ij + ik + jk
+                the_dict_formed_here = {}
+                for l in range(0, len(nodes)):
+                    if l == i or l == j or l == k:
+                        continue
+                    li = int(G.has_edge(min(l, i), max(l, i)))
+                    lj = int(G.has_edge(min(l, j), max(l, j)))
+                    lk = int(G.has_edge(min(l, k), max(l, k)))
+                    li_count = li * (ij + ik)
+                    lj_count = lj * (ij + jk)
+                    lk_count = lk * (ik + jk)
+                    edge_count = li + lj + lk
+                    identifier = (edge_count, tuple(sorted([li_count, lj_count, lk_count])))
+                    if identifier not in the_dict_formed_here:
+                        the_dict_formed_here[identifier] = 0
+                    the_dict_formed_here[identifier] += 1
+
+                the_dict_to_compare_to = dicts[num_edges]
+                if len(the_dict_to_compare_to) == 0:
+                    dicts[num_edges] = the_dict_formed_here
+                else:
+                    if len(the_dict_to_compare_to) != len(the_dict_formed_here):
+                        return False
+                    for identifier, count in the_dict_formed_here.items():
+                        if identifier not in the_dict_to_compare_to or the_dict_to_compare_to[identifier] != count:
+                            return False
+    return True
