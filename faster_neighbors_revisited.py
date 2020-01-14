@@ -96,7 +96,7 @@ class FasterNeighborsRevisited:
             before_after_comparison = BeforeAfterLabels(original_labels, self.nodewise_overlays[node])
 
             # i = (self.internal_labels[node], comp_output)
-            i = (self.internal_labels[node], exp, before_after_comparison)
+            i = (self.internal_labels[node], exp)
             self.nodewise_overlays[node] = exp.internal_labels
             """
             for j in self.nodes:
