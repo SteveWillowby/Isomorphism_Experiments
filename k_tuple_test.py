@@ -5,7 +5,7 @@ from weisfeiler_lehman import *
 
 class KTupleTest:
 
-    def __init__(self, G, external_labels=None, nodewise="Master"):
+    def __init__(self, G, external_labels=None, k=2, nodewise="Master"):
         self.nodewise = nodewise
 
         if external_labels is None:
@@ -14,42 +14,28 @@ class KTupleTest:
         # 0-index the nodes AND the external labels
         if self.nodewise == "Master":
             G, external_labels = graph_utils.zero_indexed_graph_and_coloring_list(G, external_labels)
+
         self.G = G
         self.nodes = list(self.G.nodes())
         self.nodes.sort()
         self.mapping_to_neighbors = [list(self.G.neighbors(n)) for n in self.nodes]
-        self.pairs = [(min(a, b), max(a, b)) for (a, b) in G.edges()]
-        self.mapping_to_pairs = [list([(min(n, o), max(n, o)) for o in self.G.neighbors(n)]) for n in self.nodes]
-        self.triples = []
-        self.mapping_to_triples = [[] for n in self.nodes]
-        for i in range(0, len(self.nodes)):
-            for j in range(i + 1, len(self.nodes)):
-                for k in range(j + 1, len(self.nodes)):
-                    ij = int((i, j) in self.G.edges())
-                    ik = int((i, k) in self.G.edges())
-                    jk = int((j, k) in self.G.edges())
-                    if ij + ik + jk >= 2:
-                        self.triples.append((i, j, k))
-                        self.mapping_to_triples[i].append((i, j, k))
-                        self.mapping_to_triples[j].append((i, j, k))
-                        self.mapping_to_triples[k].append((i, j, k))
+        self.K = k
+        self.tuples = []
+        #self.susbsets_of_tuples = [[]]
+        self.internal_labels = {}
 
-        self.internal_node_labels = [external_labels[n] for n in self.nodes]
-        self.internal_pair_labels = [sorted([external_labels[a], external_labels[b]]) for (a, b) in self.pairs]
-        self.internal_triple_labels = [sorted([external_labels[a], external_labels[b], external_labels[c]]) for (a, b, c) in self.triples]
-        self.external_labels = [external_labels[n] for n in self.nodes]
-
-        # Give things a head-start.
-        overall_coloring = list(self.internal_labels)
-        max_color = len(WL(self.G, overall_coloring))
+        for i in range(1, self.K + 1):
+            tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
+            self.tuples.append([])
+            #if i > 1:
+            #    self.subsets_of_tuples.append(alg_utils.get_all_k_tuples(i, i - 1)
+            for candidate in tuple_candidates:
+                if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
+                    self.tuples[-1].append(candidate)
+                    self.internal_labels[candidate] = 0
 
         counter = 0
         while True:
-            pair_colors = {}
-            for pair in self.pairs:
-                coloring_copy = list(overall_coloring)
-            for triple in self.triples:
-                
             sorted_ids = self.get_new_ids_in_order()
             new_labels = self.assign_new_labels_for_sorted_ids(sorted_ids)
             if self.are_new_labels_effectively_the_same(new_labels):
@@ -79,11 +65,6 @@ class KTupleTest:
                     self.nodewise_overlays[node][n] = c
                 i = (self.internal_labels[node], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
                 # self.nodewise_overlays[node] = i[1].internal_labels
-            else:
-                print("THIS SHOULD NO LONGER BE CALLED!")
-                neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
-                neighbors.sort()
-                i = (self.internal_labels[node], neighbors) # TODO: Consider whether referencing oneself is necessary.
             ids.append((node, i))
         ids.sort(key=(lambda x: x[1]))
         return ids

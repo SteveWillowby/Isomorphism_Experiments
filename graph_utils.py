@@ -1,6 +1,22 @@
 import networkx as nx
 import numpy as np
 
+# def zero_indexed_graph(G):
+
+# def zero_indexed_graph_and_coloring_list(G, C):
+
+#    Assumes zero-indexed input
+# def graph_union(G1, G2):
+
+# def induced_subgraph(G, nodes):
+
+# def permute_node_labels(G):
+
+# def make_graph_with_same_degree_dist(G):
+
+# def is_3_SR(G):
+
+
 def zero_indexed_graph(G):
     nodes = list(G.nodes())
     nodes.sort()
@@ -42,6 +58,18 @@ def graph_union(G1, G2):
     for (a, b) in G2.edges():
         G3.add_edge(a + node_start, b + node_start)
     return G3
+
+def induced_subgraph(G, nodes):
+    new_G = nx.Graph()
+    for n in nodes:
+        G.add_node(n)
+    for i in range(0, len(nodes)):
+        n1 = nodes[i]
+        for j in range(i + 1, len(nodes)):
+            n2 = nodes[j]
+            if G.has_edge(n1, n2):
+                new_G.add_edge(n1, n2)
+    return new_G
 
 def permute_node_labels(G):
     nodes = list(G.nodes())
