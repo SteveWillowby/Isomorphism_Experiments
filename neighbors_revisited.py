@@ -41,7 +41,8 @@ class NeighborsRevisited:
             if self.nodewise:
                 new_labels = {n: l for n, l in self.internal_labels.items()}
                 new_labels[node] = self.next_numeric_label
-                i = (self.internal_labels[node], NeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
+                #i = (self.internal_labels[node], NeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
+                i = (NeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # I think this is ok given label counts. Just needed below.
             else:
                 neighbors = [self.internal_labels[n] for n in self.mapping_to_neighbors[node]]
                 neighbors.sort()
