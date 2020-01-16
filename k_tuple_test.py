@@ -5,41 +5,48 @@ from weisfeiler_lehman import *
 
 class KTupleTest:
 
-    def __init__(self, G, external_labels=None, k=2, nodewise="Master"):
-        self.nodewise = nodewise
+    def __init__(self, G, k=2, external_labels=None, mode="Master"):
+        self.mode = mode
 
         if external_labels is None:
             external_labels = [0 for n in G.nodes()]
 
         # 0-index the nodes AND the external labels
-        if self.nodewise == "Master":
+        if self.mode == "Master":
             G, external_labels = graph_utils.zero_indexed_graph_and_coloring_list(G, external_labels)
 
         self.G = G
+        self.K = k
+
         self.nodes = list(self.G.nodes())
         self.nodes.sort()
-        self.mapping_to_neighbors = [list(self.G.neighbors(n)) for n in self.nodes]
-        self.K = k
-        self.tuples = []
-        #self.susbsets_of_tuples = [[]]
-        self.internal_labels = {}
 
+        self.mapping_to_neighbors = [list(self.G.neighbors(n)) for n in self.nodes]
+
+        self.tuples = []
         for i in range(1, self.K + 1):
             tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
-            self.tuples.append([])
             #if i > 1:
             #    self.subsets_of_tuples.append(alg_utils.get_all_k_tuples(i, i - 1)
             for candidate in tuple_candidates:
                 if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
-                    self.tuples[-1].append(candidate)
+                    self.tuples.append(candidate)
                     self.internal_labels[candidate] = 0
+
+        self.internal_labels = {}
+
+        for tup in self.tuples:
+            if len(tup) == 1:
+                self.internal_labels[tup] = external_labels[tup[0]]
+            else:
+                self.internal_labels[tup] = 0
 
         counter = 0
         while True:
             sorted_ids = self.get_new_ids_in_order()
             new_labels = self.assign_new_labels_for_sorted_ids(sorted_ids)
             if self.are_new_labels_effectively_the_same(new_labels):
-                if self.nodewise == "Master":
+                if self.mode == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
                     print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.initial_G.nodes()]))))
                 break
@@ -47,7 +54,7 @@ class KTupleTest:
             self.internal_labels = new_labels
             counter += 1
 
-        if self.nodewise == "Master":
+        if self.mode == "Master":
             self.set_canonical_form()
         else:
             self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
@@ -55,16 +62,11 @@ class KTupleTest:
 
     def get_new_ids_in_order(self):
         ids = []
-        for node in self.nodes:
-            if self.nodewise:
-                #new_labels = [self.nodewise_overlays[node][n] * self.higher_than_any_internal_label + self.internal_labels[n] for n in self.nodes]
-                #i = (self.internal_labels[node], FasterNeighborsRevisited(self.G, external_labels=new_labels, nodewise=False)) # Referencing oneself appears to be necessary!
-                new_overlay = [(self.nodewise_overlays[node][n], n) for n in self.nodes]
-                alg_utils.further_sort_by(new_overlay, self.internal_labels)
-                for (c, n) in new_overlay:
-                    self.nodewise_overlays[node][n] = c
-                i = (self.internal_labels[node], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
-                # self.nodewise_overlays[node] = i[1].internal_labels
+        for tup in self.tuples:
+            old_ranks = [(self.internal_labels[(n,)], n in tup, n) for n in self.nodes]
+            
+            i = (self.internal_labels[tup], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
+            # self.nodewise_overlays[node] = i[1].internal_labels
             ids.append((node, i))
         ids.sort(key=(lambda x: x[1]))
         return ids
@@ -100,14 +102,14 @@ class KTupleTest:
         return True
 
     def full_comparison(self, other):
-        if not self.nodewise and other.nodewise:
+        if not self.mode and other.mode:
             print("This comparison should never occur!")
             return -1
-        if self.nodewise and not other.nodewise:
+        if self.mode and not other.mode:
             print("This comparison should never occur!")
             return 1
 
-        if self.nodewise:
+        if self.mode:
             if self.ordered_labels < other.ordered_labels:
                 return -1
             if self.ordered_labels > other.ordered_labels:
@@ -206,7 +208,7 @@ class KTupleTest:
             else:
                 a_non_triangle = True
                 new_G.add_edge(edge[0], edge[1])
-        if self.nodewise:
+        if self.mode:
             if a_non_triangle:
                 if a_triangle:
                     print("Both kinds!")
@@ -280,7 +282,7 @@ class KTupleTest:
                 for j in range(0, len(final_node_order)):
                     new_labels[final_node_order[j]] = j
                 new_labels = [new_labels[i] for i in range(0, len(new_labels))]
-                more_refined = FasterNeighborsRevisited(self.initial_G, external_labels=new_labels, nodewise="Servant")
+                more_refined = FasterNeighborsRevisited(self.initial_G, external_labels=new_labels, mode="Servant")
                 self.further_sort(ordering, more_refined.internal_labels)
                 selected_index = 0
 
