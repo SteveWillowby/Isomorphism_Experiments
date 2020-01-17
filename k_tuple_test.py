@@ -15,6 +15,8 @@ class KTupleTest:
         if self.mode == "Master":
             G, external_labels = graph_utils.zero_indexed_graph_and_coloring_list(G, external_labels)
 
+        self.external_labels = external_labels
+
         self.G = G
         self.K = k
 
@@ -29,61 +31,72 @@ class KTupleTest:
             #if i > 1:
             #    self.subsets_of_tuples.append(alg_utils.get_all_k_tuples(i, i - 1)
             for candidate in tuple_candidates:
+                induced = graph_utils.induced_subgraph(self.G, candidate)
+                # print("These nodes: %s induced these nodes and edges: %s, %s" % (str(candidate), str(list(induced.nodes())), str(list(induced.edges()))))
                 if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
                     self.tuples.append(candidate)
-                    self.internal_labels[candidate] = 0
 
-        self.internal_labels = {}
-
-        for tup in self.tuples:
-            if len(tup) == 1:
-                self.internal_labels[tup] = external_labels[tup[0]]
-            else:
-                self.internal_labels[tup] = 0
+        self.internal_labels = [external_labels[n] for n in self.nodes]
+        self.tuple_labels = {tup: 0 for tup in self.tuples}
 
         counter = 0
         while True:
-            sorted_ids = self.get_new_ids_in_order()
-            new_labels = self.assign_new_labels_for_sorted_ids(sorted_ids)
+            self.update_tuple_ids()
+            new_labels = self.acquire_new_labels()
             if self.are_new_labels_effectively_the_same(new_labels):
                 if self.mode == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
-                    print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.initial_G.nodes()]))))
+                    print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
+                    print(sorted([(new_labels[n], n) for n in self.nodes]))
                 break
-            WL(self.G, new_labels)
+            # WL(self.G, new_labels)
             self.internal_labels = new_labels
             counter += 1
 
         if self.mode == "Master":
             self.set_canonical_form()
-        else:
-            self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
-            self.label_pairings.sort()
+        #else:
+        #    self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
+        #    self.label_pairings.sort()
 
-    def get_new_ids_in_order(self):
+    def update_tuple_ids(self):
         ids = []
         for tup in self.tuples:
-            old_ranks = [(self.internal_labels[(n,)], n in tup, n) for n in self.nodes]
-            
-            i = (self.internal_labels[tup], WL(self.G, self.nodewise_overlays[node], return_comparable_output=True)) 
-            # self.nodewise_overlays[node] = i[1].internal_labels
-            ids.append((node, i))
-        ids.sort(key=(lambda x: x[1]))
-        return ids
+            new_labels = [(self.internal_labels[n], n) for n in self.nodes]
+            alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
+            new_labels = {n: l for (l, n) in new_labels}
+            i = (self.tuple_labels[tup], WL(self.G, new_labels, return_comparable_output=True)) 
+            ids.append((i, tup))
+        ids.sort()
 
-    # O(|V'| * cmp_for_sub_labels)
-    def assign_new_labels_for_sorted_ids(self, sorted_ids):
+        new_numeric_id = 0
+        prev_identifier = ids[0][0]
+        for (identifier, tup) in ids:
+            if identifier != prev_identifier:
+                new_numeric_id += 1
+                prev_identifier = identifier
+            self.tuple_labels[tup] = new_numeric_id
+
+    def acquire_new_labels(self):
+        node_ids = {node: [self.internal_labels[node]] for node in self.nodes}
+        for tup in self.tuples:
+            for node in tup:
+                node_ids[node].append(self.tuple_labels[tup])
+        for node, l in node_ids.items():
+            l.sort()
+
+        node_ids = [(node_ids[node], node) for node in self.nodes]
+        node_ids.sort()
+
         new_labels = {}
-        prev = None
-        next_numeric_label = -1
-        self.label_definitions.append([])
-        for current in sorted_ids:
-            if prev is None or prev != current[1]:
+        prev_identifier = node_ids[0][0]
+        next_numeric_label = 0
+        for (identifier, node) in node_ids:
+            if identifier != prev_identifier:
                 next_numeric_label += 1
-                self.label_definitions[-1].append(current[1])
+                prev_identifier = identifier
 
-            new_labels[current[0]] = next_numeric_label
-            prev = current[1]
+            new_labels[node] = next_numeric_label
         return new_labels
 
     # O(|V'|)
@@ -102,122 +115,27 @@ class KTupleTest:
         return True
 
     def full_comparison(self, other):
-        if not self.mode and other.mode:
-            print("This comparison should never occur!")
+        if self.ordered_labels < other.ordered_labels:
             return -1
-        if self.mode and not other.mode:
-            print("This comparison should never occur!")
+        if self.ordered_labels > other.ordered_labels:
             return 1
-
-        if self.mode:
-            if self.ordered_labels < other.ordered_labels:
-                return -1
-            if self.ordered_labels > other.ordered_labels:
-                return 1
-            if self.matrix < other.matrix:
-                for i in range(0, len(self.matrix)):
-                    if self.matrix[i] != other.matrix[i]:
-                        print("%d:" % (i+1))
-                        print(self.matrix[i])
-                        print(other.matrix[i])
-                        print("---")
-                return -1
-            if self.matrix > other.matrix:
-                for i in range(0, len(self.matrix)):
-                    if self.matrix[i] != other.matrix[i]:
-                        print("%d:" % (i+1))
-                        print(self.matrix[i])
-                        print(other.matrix[i])
-                        print("---")
-                return 1
-            return 0
-
-        # Internal-external label matching.
-        if self.label_pairings < other.label_pairings:
+        if self.matrix < other.matrix:
+            for i in range(0, len(self.matrix)):
+                if self.matrix[i] != other.matrix[i]:
+                    print("%d:" % (i+1))
+                    print(self.matrix[i])
+                    print(other.matrix[i])
+                    print("---")
             return -1
-        if self.label_pairings > other.label_pairings:
+        if self.matrix > other.matrix:
+            for i in range(0, len(self.matrix)):
+                if self.matrix[i] != other.matrix[i]:
+                    print("%d:" % (i+1))
+                    print(self.matrix[i])
+                    print(other.matrix[i])
+                    print("---")
             return 1
-
-        if len(self.label_definitions) < len(other.label_definitions):
-            return -1
-        if len(self.label_definitions) > len(other.label_definitions):
-            return 1
-
-        # Actual label definitions.
-        for r in range(0, len(self.label_definitions)):
-            if len(self.label_definitions[r]) < len(other.label_definitions[r]):
-                return -1
-            if len(self.label_definitions[r]) > len(other.label_definitions[r]):
-                return 1
-            for i in range(0, len(self.label_definitions[r])):
-                if self.label_definitions[r][i][0] < other.label_definitions[r][i][0]:
-                    return -1
-                if self.label_definitions[r][i][0] > other.label_definitions[r][i][0]:
-                    return 1
-                if self.label_definitions[r][i][1] < other.label_definitions[r][i][1]:
-                    return -1
-                if self.label_definitions[r][i][1] > other.label_definitions[r][i][1]:
-                    return 1
-
         return 0
-
-    def expand_graph(self, G, external_labels):
-        edge_label = max(external_labels) + 1
-        new_G = nx.Graph()
-        new_labels = {}
-        node_list = list(G.nodes())
-        node_list.sort()
-        next_node_label = node_list[-1]
-        for node in node_list:
-            new_G.add_node(node)
-            new_labels[node] = external_labels[node]
-        for edge in G.edges():
-            next_node_label += 1
-            new_G.add_node(next_node_label)
-            new_G.add_edge(edge[0], next_node_label)
-            new_G.add_edge(edge[1], next_node_label)
-            new_labels[next_node_label] = edge_label
-
-        return (new_G, new_labels)
-
-    def fancy_expand_graph(self, G, external_labels):
-        expanded_edge_label = max([l for n, l in external_labels.items()]) + 1
-        new_G = nx.Graph()
-        new_labels = {}
-        node_list = list(G.nodes())
-        node_list.sort()
-        next_node_label = node_list[-1]
-        for node in node_list:
-            new_G.add_node(node)
-            new_labels[node] = external_labels[node]
-        a_triangle = False
-        a_non_triangle = False
-        for edge in G.edges():
-            triangle = False
-            for n1 in G.neighbors(edge[0]):
-                if n1 in G.neighbors(edge[1]):
-                    triangle = True
-                    break
-            if triangle:
-                a_triangle = True
-                next_node_label += 1
-                new_G.add_node(next_node_label)
-                new_G.add_edge(edge[0], next_node_label)
-                new_G.add_edge(edge[1], next_node_label)
-                new_labels[next_node_label] = expanded_edge_label
-            else:
-                a_non_triangle = True
-                new_G.add_edge(edge[0], edge[1])
-        if self.mode:
-            if a_non_triangle:
-                if a_triangle:
-                    print("Both kinds!")
-                else:
-                    print("All non-triangles")
-            else:
-                print("All triangles")
-
-        return (new_G, new_labels)
 
     def __eq__(self, other):
         return self.full_comparison(other) == 0
@@ -235,32 +153,24 @@ class KTupleTest:
         return self.full_comparison(other) > -1
 
     def set_canonical_form(self):
-        l = sorted([self.internal_labels[n] for n in self.initial_G.nodes()])
-        print(len(l))
-        prev_i = 0
-        for i in range(1, len(l)):
-            if l[i] != l[i-1]:
-                print(i - prev_i)
-                prev_i = i
-        print(len(l) - prev_i)
-        ordering = [[n, 0] for n in self.initial_nodes]
-        self.further_sort(ordering, self.internal_labels)
+        ordering = [(0, n) for n in self.nodes]
+        alg_utils.further_sort_by(ordering, self.internal_labels)
         # print("Initial Ordering:")
         # print(ordering)
 
-        final_node_order = [ordering[0][0]]
+        final_node_order = [ordering[0][1]]
         ordering = ordering[1:]
-        for i in range(1, len(self.initial_nodes)):
+        for i in range(1, len(self.nodes)):
             selected_index = 0
 
-            # FROM HERE[A]....
-            if ordering[0][1] != 0:
-                for x in ordering:
-                    x[1] -= ordering[0][1]
+            if ordering[0][0] != 0:
+                for i in range(0, len(ordering)):
+                    ordering[i] = (ordering[i][0] - ordering[0][0], ordering[i][1])
                 #print("NOT READY!")
+            # FROM HERE[A]....
             #print(ordering)
             # alg_utils.further_sort_by(ordering, {x[0]: x[1] for x in  ordering})
-            self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
+            # self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
 
             while selected_index < len(ordering):
                 if selected_index + 1 < len(ordering):
@@ -276,19 +186,17 @@ class KTupleTest:
             # print("Selected index is %d" % selected_index)
             # ....TO HERE[A] is all code to make things faster. It's not strictly necessary.
 
-            #if len(ordering) > 1 and ordering[0][1] == ordering[1][1]:
-            if selected_index >= len(ordering) or (selected_index + 1 < len(ordering) and ordering[selected_index][1] == ordering[selected_index + 1][1]):
-                new_labels = {n[0]: n[1] + len(final_node_order) for n in ordering}
+            if selected_index >= len(ordering) or (selected_index + 1 < len(ordering) and ordering[selected_index][0] == ordering[selected_index + 1][0]):
+                new_labels = {n[1]: n[0] + len(final_node_order) for n in ordering}
                 for j in range(0, len(final_node_order)):
                     new_labels[final_node_order[j]] = j
-                new_labels = [new_labels[i] for i in range(0, len(new_labels))]
-                more_refined = FasterNeighborsRevisited(self.initial_G, external_labels=new_labels, mode="Servant")
-                self.further_sort(ordering, more_refined.internal_labels)
+                more_refined = KTupleTest(self.G, k=self.K, external_labels=new_labels, mode="Servant")
+                alg_utils.further_sort_by(ordering, more_refined.internal_labels)
                 selected_index = 0
 
-            final_node_order.append(ordering[selected_index][0])
+            final_node_order.append(ordering[selected_index][1])
             if len(ordering) > 1:
-                if selected_index + 1 < len(ordering) and ordering[selected_index][1] == ordering[selected_index + 1][1]:
+                if selected_index + 1 < len(ordering) and ordering[selected_index][0] == ordering[selected_index + 1][0]:
                     print("Chose the %dth node with a tie (1-indexed)." % (i+1))
                 ordering.pop(selected_index)
         # print("The very final node ordering is:")
@@ -298,7 +206,7 @@ class KTupleTest:
         for i in range(0, len(final_node_order)):
             next_row = []
             for j in range(i + 1, len(final_node_order)):
-                if self.initial_G.has_edge(final_node_order[i], final_node_order[j]):
+                if self.G.has_edge(final_node_order[i], final_node_order[j]):
                     next_row.append(1)
                 else:
                     next_row.append(0)
@@ -307,17 +215,3 @@ class KTupleTest:
         self.final_node_order = final_node_order
         self.ordered_labels = [self.external_labels[n] for n in final_node_order]
         self.matrix = matrix
-
-    def further_sort(self, initial_list, new_labels):
-        for i in range(0, len(initial_list)):
-            initial_list[i][1] = (initial_list[i][1], new_labels[initial_list[i][0]])
-        initial_list.sort(key=(lambda x: x[1]))
-        next_label = 0
-        prev_value = initial_list[0][1]
-        initial_list[0][1] = next_label
-        for i in range(1, len(initial_list)):
-            current_value = initial_list[i][1]
-            if current_value != prev_value:
-                next_label += 1
-                prev_value = current_value
-            initial_list[i][1] = next_label

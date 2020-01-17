@@ -62,7 +62,7 @@ def graph_union(G1, G2):
 def induced_subgraph(G, nodes):
     new_G = nx.Graph()
     for n in nodes:
-        G.add_node(n)
+        new_G.add_node(n)
     for i in range(0, len(nodes)):
         n1 = nodes[i]
         for j in range(i + 1, len(nodes)):

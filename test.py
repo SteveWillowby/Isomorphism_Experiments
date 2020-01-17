@@ -9,6 +9,7 @@ from neighbors_revisited import *
 from miyazaki_graphs import *
 from paths import *
 from run_nauty import *
+from k_tuple_test import *
 import graph_utils
 import alg_utils
 import time
@@ -134,9 +135,11 @@ for i in range(0, len(COMPARISONS)):
     # G3 = graph_utils.graph_union(G, G_prime)
     # thing1 = FasterNeighborsRevisited(G3)
     print("Starting prediction")
-    c_desc_G = NeighborsRevisited(G)
+    c_desc_G = KTupleTest(G, k=2)
+    #c_desc_G = NeighborsRevisited(G)
     print("...")
-    c_desc_G_prime = NeighborsRevisited(G_prime)
+    #c_desc_G_prime = NeighborsRevisited(G_prime)
+    c_desc_G_prime = KTupleTest(G_prime, k=2)
     print("...")
     predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")
