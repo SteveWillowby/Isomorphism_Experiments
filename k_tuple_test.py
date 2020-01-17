@@ -3,6 +3,23 @@ import graph_utils
 import alg_utils
 from weisfeiler_lehman import *
 
+def k_tuple_check(G1, G2, k):
+    G1P = graph_utils.zero_indexed_graph(G1)
+    G2P = graph_utils.zero_indexed_graph(G2)
+    G1_nodes = list(G1P.nodes())
+    G2_nodes = list(G2P.nodes())
+    G1_max = max(G1_nodes) + 1
+    G2_max = max(G2_nodes) + 1
+    G1P.add_node(G1_max)
+    G2P.add_node(G2_max)
+    for node in G1_nodes:
+        G1P.add_edge(node, G1_max)
+    for node in G2_nodes:
+        G2P.add_edge(node, G2_max)
+    G3 = graph_utils.graph_union(G1P, G2P)
+    labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
+    return labels[G1_max] == labels[G1_max + G2_max + 1]
+
 class KTupleTest:
 
     def __init__(self, G, k=2, external_labels=None, mode="Master"):
@@ -25,20 +42,35 @@ class KTupleTest:
 
         self.mapping_to_neighbors = [list(self.G.neighbors(n)) for n in self.nodes]
 
+        connected_components = list(comp for comp in nx.connected.connected_components(self.G))
+        node_to_component_mapping = {}
+        for i in range(0, len(connected_components)):
+            for node in connected_components[i]:
+                node_to_component_mapping[node] = i
+
         self.tuples = []
         for i in range(1, self.K + 1):
             tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
-            #if i > 1:
-            #    self.subsets_of_tuples.append(alg_utils.get_all_k_tuples(i, i - 1)
             for candidate in tuple_candidates:
-                induced = graph_utils.induced_subgraph(self.G, candidate)
+                # induced = graph_utils.induced_subgraph(self.G, candidate)
                 # print("These nodes: %s induced these nodes and edges: %s, %s" % (str(candidate), str(list(induced.nodes())), str(list(induced.edges()))))
-                if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
+                comp = node_to_component_mapping[candidate[0]]
+                all_same_comp = True
+                for j in range(1, len(candidate)):
+                    if node_to_component_mapping[candidate[j]] != comp:
+                        all_same_comp = False
+                        break
+                # if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
+                if all_same_comp:
                     self.tuples.append(candidate)
 
-        self.internal_labels = [external_labels[n] for n in self.nodes]
+        self.internal_labels = [self.external_labels[n] for n in self.nodes]
         self.tuple_labels = {tup: 0 for tup in self.tuples}
 
+        WL(self.G, self.internal_labels)
+        l2 = len(self.nodes) - 1
+        l1 = (len(self.nodes) - 1) - int((len(self.nodes) / 2))
+        print(self.internal_labels[l1] == self.internal_labels[l2])
         counter = 0
         while True:
             self.update_tuple_ids()
@@ -49,9 +81,10 @@ class KTupleTest:
                     print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
                     print(sorted([(new_labels[n], n) for n in self.nodes]))
                 break
-            # WL(self.G, new_labels)
+            WL(self.G, new_labels)
             self.internal_labels = new_labels
             counter += 1
+            print(counter)
 
         if self.mode == "Master":
             self.set_canonical_form()
@@ -60,8 +93,11 @@ class KTupleTest:
         #    self.label_pairings.sort()
 
     def update_tuple_ids(self):
+        print("A")
         ids = []
-        for tup in self.tuples:
+        for i in range(0, len(self.tuples)):
+            print(float(i) / len(self.tuples))
+            tup = self.tuples[i]
             new_labels = [(self.internal_labels[n], n) for n in self.nodes]
             alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
             new_labels = {n: l for (l, n) in new_labels}
@@ -78,6 +114,7 @@ class KTupleTest:
             self.tuple_labels[tup] = new_numeric_id
 
     def acquire_new_labels(self):
+        print("B")
         node_ids = {node: [self.internal_labels[node]] for node in self.nodes}
         for tup in self.tuples:
             for node in tup:
