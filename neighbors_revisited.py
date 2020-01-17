@@ -8,6 +8,7 @@ class NeighborsRevisited:
             external_labels = {n: 0 for n in G.nodes()}
 
         if self.nodewise:
+            initial_G = G
             (self.G, external_labels) = self.expand_graph(G, external_labels)
             print(len(self.G.nodes()))
         else:
@@ -30,8 +31,10 @@ class NeighborsRevisited:
                 print(counter)
             counter += 1
         if self.nodewise:
-            all_labels = set([self.internal_labels[n] for n in G.nodes()])
-            print("There were a total of %d labels" % len(all_labels))
+            all_labels = [(self.internal_labels[n], n) for n in initial_G.nodes()]
+            all_labels.sort()
+            print("There were a total of %d labels" % len(set([l for (l, n) in all_labels])))
+            print(all_labels)
 
     def get_new_ids_in_order(self):
         ids = []
@@ -55,34 +58,34 @@ class NeighborsRevisited:
         new_labels = {}
         prev = None
 
-        s = self.next_numeric_label
-        idx = -1
-        prev_thingy = 0
-        if self.nodewise:
-            print("Partition sizes")
-        nodes = [sorted_ids[0][0]]
+        #s = self.next_numeric_label
+        #idx = -1
+        #prev_thingy = 0
+        #if self.nodewise:
+        #    print("Partition sizes")
+        #nodes = [sorted_ids[0][0]]
 
         for current in sorted_ids:
-            idx += 1
+            #idx += 1
             if prev is None or prev != current[1]:
                 self.next_numeric_label += 1
                 self.label_definitions.append((self.next_numeric_label, current[1]))
                 self.label_counts.append(0)
-                if self.nodewise and idx > 0:
-                    print(idx - prev_thingy)
-                    if idx - prev_thingy == 16:
-                        print(nodes)
-                    nodes = []
-                    prev_thingy = idx
-            nodes.append(current[0])
+                #if self.nodewise and idx > 0:
+                    #print(idx - prev_thingy)
+                    #if idx - prev_thingy == 16:
+                    #    print(nodes)
+                    #nodes = []
+                    #prev_thingy = idx
+            #nodes.append(current[0])
 
             new_labels[current[0]] = self.next_numeric_label
             self.label_counts[-1] += 1
             prev = current[1]
 
-        if self.nodewise:
-            print(idx + 1 - prev_thingy)
-            print("Num Labels Found: %d" % (self.next_numeric_label - s))
+        #if self.nodewise:
+        #    print(idx + 1 - prev_thingy)
+        #    print("Num Labels Found: %d" % (self.next_numeric_label - s))
 
         return new_labels
 

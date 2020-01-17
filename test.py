@@ -64,7 +64,7 @@ print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
 print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
 
 COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3)] #(M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-# COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
 #bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 #bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
