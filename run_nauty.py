@@ -10,6 +10,7 @@ Author: Jean-Gabriel Young <info@jgyoung.ca>
 import subprocess
 import networkx as nx
 from os import remove
+import graph_utils
 
 def _build_dreadnaut_file(g):
     """Prepare file to pass to dreadnaut.
@@ -88,6 +89,8 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
     return num_orbits, num_gen, X, G
 
 def nauty_isomorphism_check(G1, G2):
+    G1 = graph_utils.zero_indexed_graph(G1)
+    G2 = graph_utils.zero_indexed_graph(G2)
     G3 = nx.Graph()
     G1_nodes = list(G1.nodes())
     G1_max = G1_nodes[0]
@@ -126,7 +129,7 @@ def nauty_isomorphism_check(G1, G2):
         if len(list(G4.neighbors(node))) == len(G4.nodes()) - 1:
             count += 1
     print("Total Number of Orbits Nauty Found: %d" % (n2 - 1 + int(count > 1)))
-    # print(n1)
+    print(n1 - 1 + int(count > 1))
     #print(CG2)
     return n1 == n2
 
