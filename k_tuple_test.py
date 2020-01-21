@@ -3,7 +3,7 @@ import graph_utils
 import alg_utils
 from weisfeiler_lehman import *
 
-def k_tuple_check(G1, G2, k):
+def k_tuple_check(G1, G2, exact_k=None):
     G1P = graph_utils.zero_indexed_graph(G1)
     G2P = graph_utils.zero_indexed_graph(G2)
     G1_nodes = list(G1P.nodes())
@@ -17,8 +17,22 @@ def k_tuple_check(G1, G2, k):
     for node in G2_nodes:
         G2P.add_edge(node, G2_max)
     G3 = graph_utils.graph_union(G1P, G2P)
-    labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
-    return labels[G1_max] == labels[G1_max + G2_max + 1]
+    if exact_k is not None:
+        labels = KTupleTest(G3, k=exact_k, mode="Servant").internal_labels
+        return labels[G1_max] == labels[G1_max + G2_max + 1]
+    for k in range(0, len(G1_nodes) - 1):
+        print("A %d" % k)
+        labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
+        if labels[G1_max] != labels[G1_max + G2_max + 1]:
+            return False
+        print("B %d" % k)
+        G1_Canon = KTupleTest(G1P, k=k, mode="Master")
+        G2_Canon = KTupleTest(G2P, k=k, mode="Master")
+        if G1_Canon == G2_Canone:
+            return True
+        
+    print("No solution found! Algorithm incomplete!")
+    return None
 
 class KTupleTest:
 
@@ -86,7 +100,7 @@ class KTupleTest:
             WL(self.G, new_labels)
             self.internal_labels = new_labels
             counter += 1
-            print(counter)
+            # print(counter)
 
         if self.mode == "Master":
             self.set_canonical_form()
@@ -153,6 +167,11 @@ class KTupleTest:
             if new_label not in new_group_identifiers:
                 new_group_identifiers[new_label] = node
             if old_group_identifiers[old_label] != new_group_identifiers[new_label]:
+                print(old_group_identifiers[old_label])
+                print(new_group_identifiers[new_label])
+                print("What?")
+                print(old_label)
+                print(new_label)
                 return False
         return True
 
@@ -206,12 +225,13 @@ class KTupleTest:
             selected_index = 0
 
             if ordering[0][0] != 0:
+                sub_value = ordering[0][0]
                 for i in range(0, len(ordering)):
-                    ordering[i] = (ordering[i][0] - ordering[0][0], ordering[i][1])
+                    ordering[i] = (ordering[i][0] - sub_value, ordering[i][1])
                 #print("NOT READY!")
             # FROM HERE[A]....
             #print(ordering)
-            # alg_utils.further_sort_by(ordering, {x[0]: x[1] for x in  ordering})
+            # alg_utils.further_sort_by(ordering, {x[1]: x[0] for x in  ordering})
             # self.further_sort(ordering, self.nodewise_overlays[final_node_order[-1]])
 
             while selected_index < len(ordering):
@@ -237,6 +257,9 @@ class KTupleTest:
                 selected_index = 0
 
             final_node_order.append(ordering[selected_index][1])
+            # print("Partitioning was: %s" % str(ordering))
+            # print("Selected node %d, at which point there were %d labels" % (final_node_order[-1], len(final_node_order) + ordering[-1][0]))
+
             if len(ordering) > 1:
                 if selected_index + 1 < len(ordering) and ordering[selected_index][0] == ordering[selected_index + 1][0]:
                     print("Chose the %dth node with a tie (1-indexed)." % (i+1))
