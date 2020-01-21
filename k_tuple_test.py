@@ -100,10 +100,13 @@ class KTupleTest:
             if self.K == 0:
                 i = (self.tuple_labels[tup], sorted([self.internal_labels[n] for n in self.mapping_to_neighbors[tup[0]]]))
             else:
-                new_labels = [(self.internal_labels[n], n) for n in self.nodes]
-                alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
+                old_labels = {n: (self.internal_labels[n], n in tup) for n in self.nodes}
+                new_labels = [(0, n) for n in self.nodes]
+                alg_utils.further_sort_by(new_labels, old_labels)
                 new_labels = {n: l for (l, n) in new_labels}
-                i = (self.tuple_labels[tup], WL(self.G, new_labels, return_comparable_output=True)) 
+                comp_result = WL(self.G, new_labels, return_comparable_output=True)
+                label_matching = BeforeAfterLabels(old_labels, new_labels)
+                i = (self.tuple_labels[tup], comp_result, label_matching)
             ids.append((i, tup))
         ids.sort()
 
@@ -254,3 +257,32 @@ class KTupleTest:
         self.final_node_order = final_node_order
         self.ordered_labels = [self.external_labels[n] for n in final_node_order]
         self.matrix = matrix
+
+class BeforeAfterLabels:
+
+    def __init__(self, before, after):
+        before_to_after = {}
+        for item, before_label in before.items():
+            after_label = after[item]
+            key = (before_label, after_label)
+            if key not in before_to_after:
+                before_to_after[key] = 0
+            before_to_after[key] += 1
+        before_to_after = [(label, count) for label, count in before_to_after.items()]
+        before_to_after.sort()
+        self.value = before_to_after
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __le__(self, other):
+        return self.value <= other.value
+
+    def __ge__(self, other):
+        return self.value >= other.value
