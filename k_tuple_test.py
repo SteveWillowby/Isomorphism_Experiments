@@ -17,7 +17,11 @@ def k_tuple_check(G1, G2, k):
     for node in G2_nodes:
         G2P.add_edge(node, G2_max)
     G3 = graph_utils.graph_union(G1P, G2P)
-    labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
+    if k >= 1:
+        labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
+    else:
+        labels = [0 for node in G3.nodes()]
+        WL(G3, labels)
     return labels[G1_max] == labels[G1_max + G2_max + 1]
 
 class KTupleTest:
@@ -70,13 +74,12 @@ class KTupleTest:
         WL(self.G, self.internal_labels)
         l2 = len(self.nodes) - 1
         l1 = (len(self.nodes) - 1) - int((len(self.nodes) / 2))
-        print(self.internal_labels[l1] == self.internal_labels[l2])
         counter = 0
         while True:
             self.update_tuple_ids()
             new_labels = self.acquire_new_labels()
             if self.are_new_labels_effectively_the_same(new_labels):
-                if self.mode == "Master":
+                if True or self.mode == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
                     print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
                     print(sorted([(new_labels[n], n) for n in self.nodes]))
@@ -93,10 +96,10 @@ class KTupleTest:
         #    self.label_pairings.sort()
 
     def update_tuple_ids(self):
-        print("A")
+        # print("A")
         ids = []
         for i in range(0, len(self.tuples)):
-            print(float(i) / len(self.tuples))
+            # print(float(i) / len(self.tuples))
             tup = self.tuples[i]
             new_labels = [(self.internal_labels[n], n) for n in self.nodes]
             alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
@@ -114,7 +117,7 @@ class KTupleTest:
             self.tuple_labels[tup] = new_numeric_id
 
     def acquire_new_labels(self):
-        print("B")
+        # print("B")
         node_ids = {node: [self.internal_labels[node]] for node in self.nodes}
         for tup in self.tuples:
             for node in tup:
