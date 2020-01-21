@@ -64,8 +64,8 @@ print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
 print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
 print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
 
-# COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
+# COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -132,18 +132,19 @@ for i in range(0, len(COMPARISONS)):
 
     (G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
+
     # G3 = graph_utils.graph_union(G, G_prime)
     # thing1 = FasterNeighborsRevisited(G3)
-    print("Starting prediction")
-    c_desc_G = KTupleTest(G, k=2)
+    #print("Starting prediction")
+    #c_desc_G = KTupleTest(G, k=2)
     #c_desc_G = NeighborsRevisited(G)
     print("...")
     #c_desc_G_prime = NeighborsRevisited(G_prime)
-    c_desc_G_prime = KTupleTest(G_prime, k=2)
-    print("...")
-    predict_iso = c_desc_G == c_desc_G_prime
+    #c_desc_G_prime = KTupleTest(G_prime, k=2)
+    #print("...")
+    #predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")
-    #predict_iso = k_tuple_check(G, G_prime, k=0)
+    predict_iso = k_tuple_check(G, G_prime) # exact_k=2
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
     print("Running Nauty...")

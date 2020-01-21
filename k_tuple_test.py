@@ -21,15 +21,14 @@ def k_tuple_check(G1, G2, exact_k=None):
         labels = KTupleTest(G3, k=exact_k, mode="Servant").internal_labels
         return labels[G1_max] == labels[G1_max + G2_max + 1]
     for k in range(0, len(G1_nodes) - 1):
-        print("A %d" % k)
         labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
         if labels[G1_max] != labels[G1_max + G2_max + 1]:
             return False
-        print("B %d" % k)
         G1_Canon = KTupleTest(G1P, k=k, mode="Master")
         G2_Canon = KTupleTest(G2P, k=k, mode="Master")
-        if G1_Canon == G2_Canone:
+        if G1_Canon == G2_Canon:
             return True
+        print("k = %d inconclusive. Moving on to k = %d" % (k, k + 1))
         
     print("No solution found! Algorithm incomplete!")
     return None
@@ -93,9 +92,10 @@ class KTupleTest:
             new_labels = self.acquire_new_labels()
             if self.are_new_labels_effectively_the_same(new_labels):
                 if True or self.mode == "Master":
-                    print("Took a total of %s rounds to first get the correct labels." % (counter))
-                    print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
+                    #print("Took a total of %s rounds to first get the correct labels." % (counter))
+                    # print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
                     # print(sorted([(new_labels[n], n) for n in self.nodes]))
+                    pass
                 break
             WL(self.G, new_labels)
             self.internal_labels = new_labels
@@ -124,13 +124,13 @@ class KTupleTest:
             ids.append((i, tup))
         ids.sort()
 
-        new_numeric_id = 0
+        new_tuple_id = len(self.nodes)
         prev_identifier = ids[0][0]
         for (identifier, tup) in ids:
             if identifier != prev_identifier:
-                new_numeric_id += 1
+                new_tuple_id += 1
                 prev_identifier = identifier
-            self.tuple_labels[tup] = new_numeric_id
+            self.tuple_labels[tup] = new_tuple_id
 
     def acquire_new_labels(self):
         # print("B")
@@ -167,34 +167,31 @@ class KTupleTest:
             if new_label not in new_group_identifiers:
                 new_group_identifiers[new_label] = node
             if old_group_identifiers[old_label] != new_group_identifiers[new_label]:
-                print(old_group_identifiers[old_label])
-                print(new_group_identifiers[new_label])
-                print("What?")
-                print(old_label)
-                print(new_label)
                 return False
         return True
 
-    def full_comparison(self, other):
+    def full_comparison(self, other, show_diff=False):
         if self.ordered_labels < other.ordered_labels:
             return -1
         if self.ordered_labels > other.ordered_labels:
             return 1
         if self.matrix < other.matrix:
-            for i in range(0, len(self.matrix)):
-                if self.matrix[i] != other.matrix[i]:
-                    print("%d:" % (i+1))
-                    print(self.matrix[i])
-                    print(other.matrix[i])
-                    print("---")
+            if show_diff:
+                for i in range(0, len(self.matrix)):
+                    if self.matrix[i] != other.matrix[i]:
+                        print("%d:" % (i+1))
+                        print(self.matrix[i])
+                        print(other.matrix[i])
+                        print("---")
             return -1
         if self.matrix > other.matrix:
-            for i in range(0, len(self.matrix)):
-                if self.matrix[i] != other.matrix[i]:
-                    print("%d:" % (i+1))
-                    print(self.matrix[i])
-                    print(other.matrix[i])
-                    print("---")
+            if show_diff:
+                for i in range(0, len(self.matrix)):
+                    if self.matrix[i] != other.matrix[i]:
+                        print("%d:" % (i+1))
+                        print(self.matrix[i])
+                        print(other.matrix[i])
+                        print("---")
             return 1
         return 0
 
@@ -261,8 +258,8 @@ class KTupleTest:
             # print("Selected node %d, at which point there were %d labels" % (final_node_order[-1], len(final_node_order) + ordering[-1][0]))
 
             if len(ordering) > 1:
-                if selected_index + 1 < len(ordering) and ordering[selected_index][0] == ordering[selected_index + 1][0]:
-                    print("Chose the %dth node with a tie (1-indexed)." % (i+1))
+                #if selected_index + 1 < len(ordering) and ordering[selected_index][0] == ordering[selected_index + 1][0]:
+                    #print("Chose the %dth node with a tie (1-indexed)." % (i+1))
                 ordering.pop(selected_index)
         # print("The very final node ordering is:")
         # print(final_node_order)

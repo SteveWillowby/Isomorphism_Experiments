@@ -12,7 +12,7 @@ import networkx as nx
 from os import remove
 import graph_utils
 
-def _build_dreadnaut_file(g):
+def _build_dreadnaut_file(g, labels=None):
     """Prepare file to pass to dreadnaut.
 
     Warning
@@ -32,6 +32,24 @@ def _build_dreadnaut_file(g):
                   line += str(nb) + " "
           line += ";"
           file_content.append(line)
+
+    if labels is not None:
+        if type(labels) is dict:
+            l = [(l, n) for n, l in labels.items()]
+        else:
+            l = [(labels[i], i) for i in range(0, len(g.nodes()))]
+        l.sort()
+        line = "f=["
+        prev_c = l[0][0]
+        for (c, n) in l:
+            if c != prev_c:
+                line += "|"
+                prev_c = c
+            line += " %d " % n
+        line += "]"
+        print(line)
+        file_content.append(line)
+
     # add nauty command
     file_content.append(".")
     file_content.append("+c")
@@ -42,9 +60,9 @@ def _build_dreadnaut_file(g):
     return file_content
 
 
-def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Traces/nauty26r12/dreadnaut"):
+def nauty_compute(g, labels=None, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Traces/nauty26r12/dreadnaut"):
     # get dreadnaut command file
-    file_content = _build_dreadnaut_file(g)
+    file_content = _build_dreadnaut_file(g, labels)
     # write to tmp_path
     with open(tmp_path, 'w') as f:
         print("\n".join(file_content), file=f)
@@ -56,11 +74,12 @@ def nauty_compute(g, tmp_path="/tmp/dreadnaut.txt", dreadnaut_call="Nauty_n_Trac
     res = proc.stdout.decode()
     # print(res)
     lines = res.strip().split("\n")
-    info = lines[0]
-    orbits = lines[2]
-    G = lines[3:]
+    offset = int(labels is not None)
+    info = lines[0 + offset]
+    orbits = lines[2 + offset]
+    G = lines[(3+offset):]
     # = res.strip().split("\n", 2)
-    #print(info)
+    # print(info)
     # ~~~~~~~~~~~~~~
     # Extract high level info from captured output
     # ~~~~~~~~~~~~~~
