@@ -17,11 +17,7 @@ def k_tuple_check(G1, G2, k):
     for node in G2_nodes:
         G2P.add_edge(node, G2_max)
     G3 = graph_utils.graph_union(G1P, G2P)
-    if k >= 1:
-        labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
-    else:
-        labels = [0 for node in G3.nodes()]
-        WL(G3, labels)
+    labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
     return labels[G1_max] == labels[G1_max + G2_max + 1]
 
 class KTupleTest:
@@ -53,7 +49,8 @@ class KTupleTest:
                 node_to_component_mapping[node] = i
 
         self.tuples = []
-        for i in range(1, self.K + 1):
+        max_tuple_size = max(1, self.K)
+        for i in range(1, max_tuple_size + 1):
             tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
             for candidate in tuple_candidates:
                 # induced = graph_utils.induced_subgraph(self.G, candidate)
@@ -70,6 +67,8 @@ class KTupleTest:
 
         self.internal_labels = [self.external_labels[n] for n in self.nodes]
         self.tuple_labels = {tup: 0 for tup in self.tuples}
+        for node in self.nodes:
+            self.tuple_labels[tuple([node])] = self.internal_labels[node]
 
         WL(self.G, self.internal_labels)
         l2 = len(self.nodes) - 1
@@ -82,7 +81,7 @@ class KTupleTest:
                 if True or self.mode == "Master":
                     print("Took a total of %s rounds to first get the correct labels." % (counter))
                     print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
-                    print(sorted([(new_labels[n], n) for n in self.nodes]))
+                    # print(sorted([(new_labels[n], n) for n in self.nodes]))
                 break
             WL(self.G, new_labels)
             self.internal_labels = new_labels
@@ -91,9 +90,6 @@ class KTupleTest:
 
         if self.mode == "Master":
             self.set_canonical_form()
-        #else:
-        #    self.label_pairings = [(self.internal_labels[n], external_labels[n]) for n in self.nodes]
-        #    self.label_pairings.sort()
 
     def update_tuple_ids(self):
         # print("A")
@@ -101,10 +97,13 @@ class KTupleTest:
         for i in range(0, len(self.tuples)):
             # print(float(i) / len(self.tuples))
             tup = self.tuples[i]
-            new_labels = [(self.internal_labels[n], n) for n in self.nodes]
-            alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
-            new_labels = {n: l for (l, n) in new_labels}
-            i = (self.tuple_labels[tup], WL(self.G, new_labels, return_comparable_output=True)) 
+            if self.K == 0:
+                i = (self.tuple_labels[tup], sorted([self.internal_labels[n] for n in self.mapping_to_neighbors[tup[0]]]))
+            else:
+                new_labels = [(self.internal_labels[n], n) for n in self.nodes]
+                alg_utils.further_sort_by(new_labels, {n: n in tup for n in self.nodes})
+                new_labels = {n: l for (l, n) in new_labels}
+                i = (self.tuple_labels[tup], WL(self.G, new_labels, return_comparable_output=True)) 
             ids.append((i, tup))
         ids.sort()
 
