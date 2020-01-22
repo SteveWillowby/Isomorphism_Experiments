@@ -42,6 +42,11 @@ A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
+G_25_12 = [graph_from_srg_string(s) for s in GS_25_12]
+G_25_12_COMP = []
+for i in range(0, len(G_25_12)):
+    for j in range(i, len(G_25_12)):
+        G_25_12_COMP.append((G_25_12[i], G_25_12[j]))
 
 # test = PathSteps(A2)
 
@@ -66,6 +71,7 @@ print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
 
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+COMPARISONS = G_25_12_COMP
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -104,7 +110,7 @@ if False:
     print(time.time() - start_time)
 
 # COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
-COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
+# COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
