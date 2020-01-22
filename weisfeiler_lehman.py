@@ -48,9 +48,6 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
     while len(active) > 0:
         if return_comparable_output:
             the_round += 1
-            # if the_round == 2:
-                # print(comparable_output)
-                # exit(0)
 
         previous_partition_sizes = {node: len(color_to_nodes[node_to_color[node]]) for node in active}
 
@@ -128,7 +125,6 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
             next_color += 1
 
         if next_color == len(color_to_nodes):
-            # print("Stopping due to color max.")
             break
 
         new_active = set([])
@@ -142,14 +138,12 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
     if not return_comparable_output:
         return None
 
-    """
     comparable_output = []
     for node_set in color_to_nodes:
         if len(node_set) == 0:
             break
         a_node = node_set.pop()
         comparable_output.append((len(node_set) + 1, sorted([node_to_color[n] for n in neighbor_lists[a_node]])))
-    """
     return comparable_output
 
 """

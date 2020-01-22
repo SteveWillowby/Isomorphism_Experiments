@@ -63,18 +63,18 @@ class KTupleTest:
 
         self.tuples = []
         max_tuple_size = max(1, self.K)
-        for i in range(1, max_tuple_size + 1):
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!!!!!!!!!!! TODO: ASSESS WHETHER OR NOT i SHOULD START AT 1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        for i in range(max_tuple_size, max_tuple_size + 1):
             tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
             for candidate in tuple_candidates:
-                # induced = graph_utils.induced_subgraph(self.G, candidate)
-                # print("These nodes: %s induced these nodes and edges: %s, %s" % (str(candidate), str(list(induced.nodes())), str(list(induced.edges()))))
                 comp = node_to_component_mapping[candidate[0]]
                 all_same_comp = True
                 for j in range(1, len(candidate)):
                     if node_to_component_mapping[candidate[j]] != comp:
                         all_same_comp = False
                         break
-                # if True or nx.connected.is_connected(graph_utils.induced_subgraph(self.G, candidate)):
                 if all_same_comp:
                     self.tuples.append(candidate)
 
@@ -106,7 +106,6 @@ class KTupleTest:
             self.set_canonical_form()
 
     def update_tuple_ids(self):
-        # print("A")
         ids = []
         for i in range(0, len(self.tuples)):
             # print(float(i) / len(self.tuples))
@@ -119,8 +118,8 @@ class KTupleTest:
                 alg_utils.further_sort_by(new_labels, old_labels)
                 new_labels = {n: l for (l, n) in new_labels}
                 comp_result = WL(self.G, new_labels, return_comparable_output=True)
-                label_matching = BeforeAfterLabels(old_labels, new_labels)
-                i = (self.tuple_labels[tup], comp_result, label_matching)
+                # label_matching = BeforeAfterLabels(old_labels, new_labels)
+                i = (self.tuple_labels[tup], comp_result)
             ids.append((i, tup))
         ids.sort()
 
@@ -133,7 +132,6 @@ class KTupleTest:
             self.tuple_labels[tup] = new_tuple_id
 
     def acquire_new_labels(self):
-        # print("B")
         node_ids = {node: [self.internal_labels[node]] for node in self.nodes}
         for tup in self.tuples:
             for node in tup:
