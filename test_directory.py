@@ -29,6 +29,9 @@ while next_start < len(file_names):
             G1 = graphs[i][0]
             G2 = graphs[j][0]
             print("\nComparing graphs: %s vs. %s" % (graphs[i][1].split("/")[-1], graphs[j][1].split("/")[-1]))
+            if len(G1.nodes()) == 0 or len(G2.nodes()) == 0:
+                print("At least one graph is empty. Continuing.")
+                continue
             t1 = time.time()
             prediction= k_tuple_check(G1, G2) # exact_k=2
             t2 = time.time()
