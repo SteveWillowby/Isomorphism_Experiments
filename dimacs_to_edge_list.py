@@ -1,4 +1,6 @@
 import sys
+from os import listdir
+from os.path import isfile, join
 
 def convert(input_file_name, output_file_name):
     input_file = open(input_file_name, 'r')
@@ -24,4 +26,13 @@ def convert(input_file_name, output_file_name):
     input_file.close()
     output_file.close()
 
-# convert(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    input_directory = sys.argv[1]
+    output_directory = sys.argv[2]
+    base_names = [f for f in listdir(input_directory) if isfile(join(input_directory, f))]
+    for base_name in base_names:
+        output_name = join(output_directory, base_name + ".edge_list")
+        input_name = join(input_directory, base_name)
+        print(input_name)
+        print(output_name)
+        convert(input_name, output_name)
