@@ -147,7 +147,7 @@ def nauty_isomorphism_check(G1, G2):
     for node in G4.nodes():
         if len(list(G4.neighbors(node))) == len(G4.nodes()) - 1:
             count += 1
-    print("Total Number of Orbits Nauty Found Across Both Graphs: %d" % (n2 - 1 + int(count > 1)))
+    print("Total Number of Orbits Nauty Found Across Both Graphs: %d" % (n1 - 1 + int(count > 1)))
     #print(CG2)
     return n1 == n2
 
