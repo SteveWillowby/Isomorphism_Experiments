@@ -7,6 +7,7 @@ from some_srgs import *
 from faster_neighbors_revisited import *
 from neighbors_revisited import *
 from miyazaki_graphs import *
+from rudolf_mathon import *
 from paths import *
 from run_nauty import *
 from k_tuple_test import *
@@ -60,6 +61,9 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
+RM_A25 = Rudolf_Mathon_A25()
+RM_B25 = Rudolf_Mathon_B25()
+
 print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
 print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
 print("Is Gen1Cycles 3SR? %s" % graph_utils.is_3_SR(Gen1Cycles))
@@ -70,20 +74,20 @@ print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
 print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
 
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-# COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
-COMPARISONS = G_25_12_COMP
+COMPARISONS = [(RM_A25, RM_B25), (A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+# COMPARISONS = G_25_12_COMP
 
-bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
+bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/converted/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
-bench_d3_b = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/cfi-rigid-d3-3600-01-2.edge_list", create_using=nx.Graph, nodetype=int)
-base_0100_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
-base_0100_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_a = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_8000_a.edge_list", create_using=nx.Graph, nodetype=int)
-base_1000_b = nx.read_adjlist("sat_cfi_dim/sat_cfi_base_8000_b.edge_list", create_using=nx.Graph, nodetype=int)
-base_0100_a = nx.Graph(base_0100_a)
-base_0100_b = nx.Graph(base_0100_b)
-base_1000_a = nx.Graph(base_1000_a)
-base_1000_b = nx.Graph(base_1000_b)
+bench_d3_b = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/converted/cfi-rigid-d3-3600-01-2.edge_list", create_using=nx.Graph, nodetype=int)
+#base_0100_a = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_0100_a.edge_list", create_using=nx.Graph, nodetype=int)
+#base_0100_b = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_0100_b.edge_list", create_using=nx.Graph, nodetype=int)
+base_2000_a = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_2000_a.edge_list", create_using=nx.Graph, nodetype=int)
+base_2000_b = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_2000_b.edge_list", create_using=nx.Graph, nodetype=int)
+#base_0100_a = nx.Graph(base_0100_a)
+#base_0100_b = nx.Graph(base_0100_b)
+base_2000_a = nx.Graph(base_2000_a)
+base_2000_b = nx.Graph(base_2000_b)
 
 if False:
     edge_types = {}
