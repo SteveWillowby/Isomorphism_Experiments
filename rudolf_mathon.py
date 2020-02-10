@@ -1,4 +1,5 @@
 import networkx as nx
+import graph_utils 
 
 def graph_from_adj_dict(adj_dict):
     G = nx.Graph()
@@ -38,3 +39,18 @@ def Rudolf_Mathon_B25():
              9: [14, 16, 19, 20, 21, 22], \
             10: [15, 16, 17, 18, 22, 24]}
     return graph_from_adj_dict(edges)
+
+def Rudolf_Mathons_random_graph_extension(G):
+    C = graph_utils.matrix_from_graph(G)
+    C_size = len(C)
+    C.append([1 for i in range(0, C_size)])
+    for i in range(0, C_size):
+        C[i].append(1)
+    C[-1].append(0)
+    CComp = graph_utils.complement_of_graph_matrix(C)
+    M = []
+    for i in range(0, len(C)):
+        M.append(C[i] + CComp[i])
+    for i in range(0, len(C)):
+        M.append(CComp[i] + C[i])
+    return M

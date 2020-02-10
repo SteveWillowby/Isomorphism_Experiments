@@ -16,6 +16,13 @@ import numpy as np
 
 # def is_3_SR(G):
 
+# def matrix_from_graph(G):
+
+# Note: if allow_self_loops is false, input can be just the "right half" of the adjacency matrix as follows:
+#   e.g. [[1, 1, 0], [1, 0], [1]] would denote (0, 1), (0, 2), (1, 2), (2, 3).
+# def graph_from_matrix(M, allow_self_loops=False):
+
+# def complement_of_graph_matrix(M, allow_self_loops=False):
 
 def zero_indexed_graph(G):
     nodes = list(G.nodes())
@@ -169,6 +176,28 @@ def is_3_SR(G):
                         if identifier not in the_dict_to_compare_to or the_dict_to_compare_to[identifier] != count:
                             return False
     return True
+
+def matrix_from_graph(G):
+    nodes = sorted(list(G.nodes()))
+    matrix = [[int(G.has_edge(node_a, node_b)) for node_b in nodes] for node_a in nodes]
+    return matrix
+
+def graph_from_matrix(M, allow_self_loops=False):
+    G = nx.Graph()
+    for i in range(0, len(M)):
+        G.add_node(i)
+    for i in range(0, len(M)):
+        for j in range(i + (1-int(allow_self_loops)), len(M)):
+            if M[i][j]:
+                G.add_edge(i, j)
+    return G
+
+def complement_of_graph_matrix(M, allow_self_loops=False):
+    C = [[1 - elt for elt in row] for row in M]
+    if not allow_self_loops:
+        for i in range(0, len(C)):
+            C[i][i] = 0
+    return C
 
 def gen_graph_1():
     G = nx.Graph()
