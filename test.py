@@ -63,6 +63,10 @@ M100 = miyazaki_graph(100)
 
 RM_A25 = Rudolf_Mathon_A25()
 RM_B25 = Rudolf_Mathon_B25()
+RM_A35 = Rudolf_Mathon_A35()
+RM_B35 = Rudolf_Mathon_B35()
+RM_E72_A35 = Rudolf_Mathon_E72_A35()
+RM_E72_B35 = Rudolf_Mathon_E72_B35()
 
 print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
 print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
@@ -72,10 +76,14 @@ print("Is A1 3SR? %s" % graph_utils.is_3_SR(A1))
 print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
 print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
 print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
+print("Is RM_A35 3SR? %s" % graph_utils.is_3_SR(RM_A35))
+print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
 
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
-COMPARISONS = [(RM_A25, RM_B25), (A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
+# COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 # COMPARISONS = G_25_12_COMP
+# COMPARISONS = [(RM_A25, RM_A25), (RM_B25, RM_B25), (RM_A25, RM_B25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
+COMPARISONS = [(RM_E72_A35, RM_E72_A35), (RM_E72_B35, RM_E72_B35), (RM_E72_A35, RM_E72_B35)]
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/converted/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
