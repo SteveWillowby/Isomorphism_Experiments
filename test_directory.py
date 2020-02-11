@@ -15,7 +15,7 @@ if len(sys.argv) > 2:
 file_names = sorted([join(directory, f) for f in listdir(directory) if isfile(join(directory, f))])
 
 COMPARE_IDENTICAL_GRAPHS = True
-TIME_LIMIT_ISH = 30 # If a pair takes more than this many seconds for both ours and Nauty combined, stop comparing after the pair finishes.
+TIME_LIMIT_ISH = 240 # If a pair takes more than this many seconds for both ours and Nauty combined, stop comparing after the pair finishes.
 
 next_start = 0
 while next_start < len(file_names):
@@ -48,9 +48,11 @@ while next_start < len(file_names):
                 exit(1)
 
             if t2 - t1 < t4 - t3:
-                print("Faster.")
+                print("Faster. (%d s)" % ((t4 - t3) - (t2 - t1)))
+            elif t4 - t3 < t2 - t1:
+                print("Slower. (%d s)" % ((t2 - t1) - (t4 - t3)))
             else:
-                print("Slower.")
+                print("Tied")
 
             if (t4 - t3) + (t2 - t1) > TIME_LIMIT_ISH:
                 print("Quitting because it's starting to take too long.")
