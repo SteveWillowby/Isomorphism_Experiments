@@ -24,6 +24,10 @@ import numpy as np
 
 # def complement_of_graph_matrix(M, allow_self_loops=False):
 
+# Takes a graph a forms a meta-graph where each node is a copy of G and each edge is a single node which all
+#   nodes in two copies of G connect to.
+# def Justus_square_1(G):
+
 def zero_indexed_graph(G):
     nodes = list(G.nodes())
     nodes.sort()
@@ -198,6 +202,20 @@ def complement_of_graph_matrix(M, allow_self_loops=False):
         for i in range(0, len(C)):
             C[i][i] = 0
     return C
+
+def Justus_square_1(G):
+    G = zero_indexed_graph(G)
+    num_V = len(G.nodes())
+    G_new = graph_union(G, G)
+    for i in range(2, num_V):
+        G_new = graph_union(G_new, G)
+    for (a, b) in G.edges():
+        edge_label = num_V * num_V + min(a, b) * num_V + max(a, b)
+        G_new.add_node(edge_label)
+        for i in range(0, num_V):
+            G_new.add_edge(a * num_V + i, edge_label)
+            G_new.add_edge(b * num_V + i, edge_label)
+    return G_new
 
 def gen_graph_1():
     G = nx.Graph()
