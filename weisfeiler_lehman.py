@@ -1,4 +1,5 @@
 import networkx as nx
+import alg_utils
 
 # Assumes the input graph is zero-indexed.
 # Also assumes the coloring is sorted by node index.
@@ -145,6 +146,87 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
         a_node = node_set.pop()
         comparable_output.append((len(node_set) + 1, sorted([node_to_color[n] for n in neighbor_lists[a_node]])))
     return comparable_output
+
+def k_dim_WL_test(G1, G2, k):
+    print("Beginning %d-dim WL test" % k)
+    G1_nodes = [(1, n) for n in G1.nodes()]
+    G2_nodes = [(2, n) for n in G2.nodes()]
+    if len(G1_nodes) != len(G2_nodes):
+        return False
+    G1_edges = [((1, min(a, b)), (1, max(a, b))) for (a, b) in G1.edges()]
+    G2_edges = [((2, min(a, b)), (2, max(a, b))) for (a, b) in G2.edges()]
+    if len(G1_edges) != len(G2_edges):
+        return False
+
+    edges = set(G1_edges + G2_edges)
+    nodes = G1_nodes + G2_nodes
+
+    k_tups = alg_utils.get_all_k_permutations(len(G1_nodes), k)
+    k_tups = [tuple([G1_nodes[idx] for idx in k_tup]) for k_tup in k_tups] + [tuple([G2_nodes[idx] for idx in k_tup]) for k_tup in k_tups]
+    print("Got tups")
+
+    k_tup_labels = []
+    for k_tup in k_tups:
+        label = []
+        for var_a in k_tup:
+            for var_b in k_tup:
+                var_min = min(var_a, var_b)
+                var_max = max(var_a, var_b)
+                label.append(int((var_min, var_max) in edges))
+        k_tup_labels.append((label, k_tup))
+    k_tup_labels.sort()
+
+    next_integer_label = 0
+    new_k_tup_labels = {k_tup_labels[0][1]: 0}
+    prev_label = k_tup_labels[0][0]
+    for i in range(1, len(k_tup_labels)):
+        if k_tup_labels[i][0] != prev_label:
+            next_integer_label += 1
+            prev_label = k_tup_labels[i][0]
+        new_k_tup_labels[k_tup_labels[i][1]] = next_integer_label
+    k_tup_labels = new_k_tup_labels
+
+    total_num_integer_labels = next_integer_label + 1
+    print("Got initial labels")
+
+    # Now that the initial labels have been assigned...
+    # Assign neighbors.
+    neighbors = {k_tup: [] for k_tup in k_tups}
+    for k_tup in k_tups:
+        for i in range(0, k):
+            for j in range(0, len(nodes)):
+                if nodes[j] != k_tup[i] and nodes[j][0] == k_tup[i][0]: # If different but from same graph...
+                    new_tup = [elt for elt in k_tup]
+                    new_tup[i] = nodes[j]
+                    neighbors[k_tup].append(tuple(new_tup))
+    print("Got neighbors")
+
+    # Main algorithm loop:
+    prev_num_integer_labels = 0
+    while total_num_integer_labels != prev_num_integer_labels:
+        # Acquire new labels.
+        new_k_tup_labels = [((k_tup_labels[k_tup], sorted([k_tup_labels[neighbor] for neighbor in neighbors[k_tup]])), k_tup) for k_tup in k_tups]
+        new_k_tup_labels.sort()
+        next_integer_label = 0
+        new_new_k_tup_labels = {new_k_tup_labels[0][1]: 0}
+        prev_label = new_k_tup_labels[0][0]
+        for i in range(1, len(new_k_tup_labels)):
+            if new_k_tup_labels[i][0] != prev_label:
+                next_integer_label += 1
+                prev_label = new_k_tup_labels[i][0]
+            new_new_k_tup_labels[new_k_tup_labels[i][1]] = next_integer_label
+        k_tup_labels = new_new_k_tup_labels
+
+        prev_num_integer_labels = total_num_integer_labels
+        total_num_integer_labels = next_integer_label + 1
+
+    # Now check to see if there is an overlap of labels...
+    first_tup = k_tups[0]
+    for i in range(1, len(k_tups)):
+        other_tup = k_tups[i]
+        if other_tup[0][0] != first_tup[0][0] and k_tup_labels[first_tup] == k_tup_labels[other_tup]: # Different graphs but same labels.
+            return True
+    return False
 
 """
 G = nx.Graph()

@@ -58,3 +58,21 @@ def get_all_k_tuples(n, k):
     while increment_k_tuple(current_tuple, n):
         stored_tuples.append(tuple(current_tuple))
     return stored_tuples
+
+def increment_k_permutation(p, n):
+    idx_to_increment = len(p) - 1
+    while idx_to_increment >= 0 and p[idx_to_increment] == n - 1:
+        idx_to_increment -= 1
+    if idx_to_increment < 0:
+        return False
+    p[idx_to_increment] += 1
+    for j in range(idx_to_increment + 1, len(p)):
+        p[j] = 0
+    return True
+
+def get_all_k_permutations(n, k):
+    current_tuple = [0 for i in range(0, k)]
+    stored_tuples = [tuple(current_tuple)]
+    while increment_k_permutation(current_tuple, n):
+        stored_tuples.append(tuple(current_tuple))
+    return stored_tuples
