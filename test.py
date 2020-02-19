@@ -82,7 +82,7 @@ print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 # COMPARISONS = G_25_12_COMP
-COMPARISONS = [(RM_A25, RM_A25), (RM_B25, RM_B25), (RM_A25, RM_B25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
+# COMPARISONS = [(RM_A25, RM_A25), (RM_B25, RM_B25), (RM_A25, RM_B25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
 JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)
 # COMPARISONS = [(RM_A25, RM_A25), (JS1_RM_A25, JS1_RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
@@ -124,12 +124,29 @@ if False:
     print("New Code's Time")
     print(time.time() - start_time)
 
-# COMPARISONS = [(base_0100_a, graph_utils.permute_node_labels(base_0100_a)), (base_1000_a, graph_utils.permute_node_labels(base_1000_a))]
+COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_a)), (base_2000_a, graph_utils.permute_node_labels(base_2000_b))]
 # COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
+
+GWat = nx.Graph()
+GWat.add_node(0)
+GWat.add_node(1)
+GWat.add_node(2)
+GWat.add_node(3)
+GWat.add_node(4)
+GWat.add_node(5)
+GWat.add_edge(0, 1)
+GWat.add_edge(1, 2)
+GWat.add_edge(3, 4)
+GWat.add_edge(4, 5)
+GWuh = nx.Graph(GWat)
+GWat.add_edge(0, 2)
+GWat.add_edge(3, 5)
+GWuh.add_edge(0, 3)
+GWuh.add_edge(2, 5)
+# COMPARISONS = [(GWat, GWuh)]
 
 for i in range(0, len(COMPARISONS)):
     #print("Creating Pairs of Graphs")
-    """
     good = False
     while not good:
         # Generate first G
@@ -137,21 +154,20 @@ for i in range(0, len(COMPARISONS)):
         #sequence = [2, 2, 2, 2, 6, 4, 4, 4, 4]  # Set sequence
         #G=nx.configuration_model(sequence)
 
-        # G=nx.erdos_renyi_graph(100,0.4)
-        G=nx.watts_strogatz_graph(100,3,0.3)
+        G=nx.erdos_renyi_graph(100,0.4)
+        #G=nx.watts_strogatz_graph(100,3,0.3)
         #G=nx.barabasi_albert_graph(10,2)
 
         G=nx.Graph(G)
-        G.remove_edges_from(G.selfloop_edges())
+        G.remove_edges_from([(n, n) for n in G.nodes()])
         if not is_connected(G):
             print("Bad: G disconnected")
             continue
         good = True
-        G_prime = make_graph_with_same_degree_dist(G)
+        G_prime = graph_utils.make_graph_with_same_degree_dist(G)
         # G_prime = graph_utils.permute_node_labels(G)
-    """
 
-    (G, G_prime) = COMPARISONS[i]
+    #(G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
 
     # G3 = graph_utils.graph_union(G, G_prime)
@@ -166,7 +182,7 @@ for i in range(0, len(COMPARISONS)):
     #predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")
     predict_iso = k_tuple_check(G, G_prime) # exact_k=2
-    predict_iso = k_dim_WL_test(G, G_prime, 3)
+    predict_iso = k_dim_WL_test(G, G_prime, 2)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
     print("Running Nauty...")

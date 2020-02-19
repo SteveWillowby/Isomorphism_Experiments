@@ -149,12 +149,14 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
 
 def k_dim_WL_test(G1, G2, k):
     print("Beginning %d-dim WL test" % k)
-    G1_nodes = [(1, n) for n in G1.nodes()]
-    G2_nodes = [(2, n) for n in G2.nodes()]
+    G1_max = max(G1.nodes()) + 1  # Connect all nodes to a single node.
+    G2_max = max(G2.nodes()) + 1  # Connect all nodes to a single node.
+    G1_nodes = [(1, n) for n in G1.nodes()] + [(1, G1_max)]
+    G2_nodes = [(2, n) for n in G2.nodes()] + [(2, G2_max)]
     if len(G1_nodes) != len(G2_nodes):
         return False
-    G1_edges = [((1, min(a, b)), (1, max(a, b))) for (a, b) in G1.edges()]
-    G2_edges = [((2, min(a, b)), (2, max(a, b))) for (a, b) in G2.edges()]
+    G1_edges = [((1, min(a, b)), (1, max(a, b))) for (a, b) in G1.edges()] + [((1, n), (1, G1_max)) for n in G1.nodes()]
+    G2_edges = [((2, min(a, b)), (2, max(a, b))) for (a, b) in G2.edges()] + [((2, n), (2, G2_max)) for n in G2.nodes()]
     if len(G1_edges) != len(G2_edges):
         return False
 
@@ -195,7 +197,7 @@ def k_dim_WL_test(G1, G2, k):
     for k_tup in k_tups:
         for i in range(0, k):
             for j in range(0, len(nodes)):
-                if nodes[j] != k_tup[i] and nodes[j][0] == k_tup[i][0]: # If different but from same graph...
+                if nodes[j] != k_tup[i] and nodes[j][0] == k_tup[i][0]:  # If different but from same graph...
                     new_tup = [elt for elt in k_tup]
                     new_tup[i] = nodes[j]
                     neighbors[k_tup].append(tuple(new_tup))
