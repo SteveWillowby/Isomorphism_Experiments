@@ -92,7 +92,7 @@ class KTupleTest:
             new_labels = self.acquire_new_labels()
             if self.are_new_labels_effectively_the_same(new_labels):
                 if True or self.mode == "Master":
-                    #print("Took a total of %s rounds to first get the correct labels." % (counter))
+                    # print("When k = %d, it took a total of %s rounds to converge on labels." % (self.K, counter))
                     # print("There were a total of %d labels" % (len(set([new_labels[n] for n in self.G.nodes()]))))
                     # print(sorted([(new_labels[n], n) for n in self.nodes]))
                     pass
@@ -111,7 +111,7 @@ class KTupleTest:
             # print(float(i) / len(self.tuples))
             tup = self.tuples[i]
             if self.K == 0:
-                i = (self.tuple_labels[tup], sorted([self.internal_labels[n] for n in self.mapping_to_neighbors[tup[0]]]))
+                l = (self.tuple_labels[tup], sorted([self.internal_labels[n] for n in self.mapping_to_neighbors[tup[0]]]))
             else:
                 old_labels = {n: (self.internal_labels[n], n in tup) for n in self.nodes}
                 new_labels = [(0, n) for n in self.nodes]
@@ -119,8 +119,8 @@ class KTupleTest:
                 new_labels = {n: l for (l, n) in new_labels}
                 comp_result = WL(self.G, new_labels, return_comparable_output=True)
                 # label_matching = BeforeAfterLabels(old_labels, new_labels)
-                i = (self.tuple_labels[tup], comp_result)
-            ids.append((i, tup))
+                l = (self.tuple_labels[tup], comp_result)
+            ids.append((l, tup))
         ids.sort()
 
         new_tuple_id = len(self.nodes)

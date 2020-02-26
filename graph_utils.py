@@ -1,5 +1,8 @@
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
+
+# def display_graph(G):
 
 # def zero_indexed_graph(G):
 
@@ -27,6 +30,8 @@ import numpy as np
 # Takes a graph a forms a meta-graph where each node is a copy of G and each edge is a single node which all
 #   nodes in two copies of G connect to.
 # def Justus_square_1(G):
+
+# def peterson_graph():
 
 def zero_indexed_graph(G):
     nodes = list(G.nodes())
@@ -142,6 +147,32 @@ def make_graph_with_same_degree_dist(G):
             done = True
     return G_prime
 
+def is_2_SR(G):
+    nodes = list(G.nodes())
+    nodes.sort()
+    dicts = [{}, {}]
+    for i in range(0, len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            t = int(G.has_edge(i, j))
+            the_dict_formed_here = {}
+            for l in range(0, len(nodes)):
+                if l == i or l == j:
+                    continue
+                cnt = int(G.has_edge(i, l)) + int(G.has_edge(j, l))
+                if cnt not in the_dict_formed_here:
+                    the_dict_formed_here[cnt] = 0
+                the_dict_formed_here[cnt] += 1
+
+            the_dict_to_compare_to = dicts[t]
+            if len(the_dict_to_compare_to) == 0:
+                dicts[t] = the_dict_formed_here
+            else:
+                if len(the_dict_to_compare_to) != len(the_dict_formed_here):
+                    return False
+                for identifier, count in the_dict_formed_here.items():
+                    if identifier not in the_dict_to_compare_to or the_dict_to_compare_to[identifier] != count:
+                        return False
+    return True
 
 def is_3_SR(G):
     nodes = list(G.nodes())
@@ -257,3 +288,38 @@ def gen_graph_1_cycles():
     #for i in range(5, 9):
     #    G3.add_edge(i, 18 + 5 + ((i - 5) + 1) % 4)
     return G3
+
+def peterson_graph():
+    G = nx.Graph()
+    for i in range(0, 10):
+        G.add_node(i)
+    G.add_edge(0, 1)
+    G.add_edge(1, 2)
+    G.add_edge(2, 3)
+    G.add_edge(3, 4)
+    G.add_edge(4, 0)
+
+    G.add_edge(0, 5)
+    G.add_edge(1, 6)
+    G.add_edge(2, 7)
+    G.add_edge(3, 8)
+    G.add_edge(4, 9)
+
+    G.add_edge(5, 7)
+    G.add_edge(7, 9)
+    G.add_edge(9, 6)
+    G.add_edge(6, 8)
+    G.add_edge(8, 5)
+
+    return G
+
+def display_graph(G, title="A graph", colors='yellow', positions=None):
+    # nodelist=
+    # edgelist=
+    # edge_color= (can be a list of colors? a dict?)
+    # pos= (a dict?)
+    # labels=
+    nx.draw_networkx(G, node_color=colors, pos=positions, node_size=100)
+    plt.title(title)
+    plt.draw()
+    plt.show()

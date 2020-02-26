@@ -7,6 +7,13 @@ perimeter = len
 nope = None
 all_organized_like = sorted
 
+
+def sr_degree_of_subgraph(G, nodes):
+    if not (type(nodes) is set):
+        nodes = set(nodes)
+    neighbors = {n: set(G.neighbors(n)) | nodes for n in nodes}
+    
+
 # Requires that no colors are negative values.
 class OrderedColoring:
 

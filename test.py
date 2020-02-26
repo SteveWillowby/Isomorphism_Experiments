@@ -11,33 +11,11 @@ from rudolf_mathon import *
 from paths import *
 from run_nauty import *
 from k_tuple_test import *
+from corneil_thesis import *
 import graph_utils
 import alg_utils
 import time
 
-def peterson_graph():
-    G = nx.Graph()
-    for i in range(0, 10):
-        G.add_node(i)
-    G.add_edge(0, 1)
-    G.add_edge(1, 2)
-    G.add_edge(2, 3)
-    G.add_edge(3, 4)
-    G.add_edge(4, 0)
-
-    G.add_edge(0, 5)
-    G.add_edge(1, 6)
-    G.add_edge(2, 7)
-    G.add_edge(3, 8)
-    G.add_edge(4, 9)
-
-    G.add_edge(5, 7)
-    G.add_edge(7, 9)
-    G.add_edge(9, 6)
-    G.add_edge(6, 8)
-    G.add_edge(8, 5)
-
-    return G
 
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
@@ -51,7 +29,7 @@ for i in range(0, len(G_25_12)):
 
 # test = PathSteps(A2)
 
-Pet = peterson_graph()
+Pet = graph_utils.peterson_graph()
 Gen1 = graph_utils.gen_graph_1()
 Gen1Cycles = graph_utils.gen_graph_1_cycles()
 M2 = miyazaki_graph(2)
@@ -61,12 +39,12 @@ M5 = miyazaki_graph(5)
 M10 = miyazaki_graph(10)
 M100 = miyazaki_graph(100)
 
-RM_A25 = Rudolf_Mathon_A25()
-RM_B25 = Rudolf_Mathon_B25()
-RM_A35 = Rudolf_Mathon_A35()
-RM_B35 = Rudolf_Mathon_B35()
-RM_E72_A35 = Rudolf_Mathon_E72_A35()
-RM_E72_B35 = Rudolf_Mathon_E72_B35()
+RM_A25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A25())
+RM_B25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B25())
+RM_A35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A35())
+RM_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B35())
+RM_E72_A35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_A35())
+RM_E72_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_B35())
 
 print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
 print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
@@ -82,7 +60,7 @@ print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 # COMPARISONS = G_25_12_COMP
-# COMPARISONS = [(RM_A25, RM_A25), (RM_B25, RM_B25), (RM_A25, RM_B25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
+COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
 JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)
 # COMPARISONS = [(RM_A25, RM_A25), (JS1_RM_A25, JS1_RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
@@ -99,6 +77,41 @@ base_2000_b = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_2000_b.edge_li
 #base_0100_b = nx.Graph(base_0100_b)
 base_2000_a = nx.Graph(base_2000_a)
 base_2000_b = nx.Graph(base_2000_b)
+
+G1 = RM_A25
+G2 = graph_utils.permute_node_labels(RM_B25)
+G2 = RM_B25
+
+G1_labels = KTupleTest(G1, k=2, external_labels=[0 if i == 0 else 0 for i in range(0, 25)], mode="Servant").internal_labels
+G2_labels = KTupleTest(G2, k=2, external_labels=[0 if i == 0 else 0 for i in range(0, 25)], mode="Servant").internal_labels
+
+if type(G1_labels) is list:
+    G1_labels = {i: G1_labels[i] for i in range(0, len(G1_labels))}
+if type(G2_labels) is list:
+    G2_labels = {i: G2_labels[i] for i in range(0, len(G2_labels))}
+
+G1_labels_QG = QuotientGraph(G1, G1_labels)
+G2_labels_QG = QuotientGraph(G2, G2_labels)
+
+print(G1_labels_QG == G2_labels_QG)
+
+G1_sub1 = graph_utils.induced_subgraph(G1, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
+G1_sub2 = graph_utils.induced_subgraph(G1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+G2_sub1 = graph_utils.induced_subgraph(G2, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
+G2_sub2 = graph_utils.induced_subgraph(G2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+print(k_tuple_check(G1_sub1, G2_sub1))
+print(k_tuple_check(G1_sub2, G2_sub2))
+# graph_utils.display_graph(G1_sub1)
+# graph_utils.display_graph(G2_sub1)
+# graph_utils.display_graph(G1_sub2)
+# graph_utils.display_graph(G2_sub2)
+graph_utils.display_graph(RM_A25, title="The counterexample to Corneil.", positions={0: (0, 0), 1: (0, 100), 2: (0, 200), 3: (0, 300), 4: (0, 400), 5: (0, 500),\
+    6: (0, 600), 7: (0, 700), 8: (0, 800), 9: (0, 900), 10: (200, -300), 11: (-200, -200), 12: (200, -100), 13: (-200, 0), 14: (200, 100),\
+    15: (-200, 200), 16: (200, 300), 17: (-200, 400), 18: (200, 500), 19: (-200, 600), 20: (200, 700), 21: (-200, 800), 22:(200, 900),\
+    23: (-200, 1000), 24: (200, 1100)}, colors=[x[1] for x in sorted([(n, c) for n, c in G1_labels.items()])])
+graph_utils.display_graph(RM_B25, title="The (un-positioned) second half of the counterexample to Corneil.")
+exit()
+
 
 if False:
     edge_types = {}
@@ -124,7 +137,7 @@ if False:
     print("New Code's Time")
     print(time.time() - start_time)
 
-COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_a)), (base_2000_a, graph_utils.permute_node_labels(base_2000_b))]
+# COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_a)), (base_2000_a, graph_utils.permute_node_labels(base_2000_b))]
 # COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
 
 GWat = nx.Graph()
@@ -167,7 +180,7 @@ for i in range(0, len(COMPARISONS)):
         G_prime = graph_utils.make_graph_with_same_degree_dist(G)
         # G_prime = graph_utils.permute_node_labels(G)
 
-    #(G, G_prime) = COMPARISONS[i]
+    (G, G_prime) = COMPARISONS[i]
     G_prime = graph_utils.permute_node_labels(G_prime)
 
     # G3 = graph_utils.graph_union(G, G_prime)
@@ -182,7 +195,7 @@ for i in range(0, len(COMPARISONS)):
     #predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")
     predict_iso = k_tuple_check(G, G_prime) # exact_k=2
-    predict_iso = k_dim_WL_test(G, G_prime, 2)
+    # predict_iso = k_dim_WL_test(G, G_prime, 2)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
     print("Running Nauty...")
