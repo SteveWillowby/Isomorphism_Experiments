@@ -105,11 +105,38 @@ print(k_tuple_check(G1_sub2, G2_sub2))
 # graph_utils.display_graph(G2_sub1)
 # graph_utils.display_graph(G1_sub2)
 # graph_utils.display_graph(G2_sub2)
-graph_utils.display_graph(RM_A25, title="The counterexample to Corneil.", positions={0: (0, 0), 1: (0, 100), 2: (0, 200), 3: (0, 300), 4: (0, 400), 5: (0, 500),\
-    6: (0, 600), 7: (0, 700), 8: (0, 800), 9: (0, 900), 10: (200, -300), 11: (-200, -200), 12: (200, -100), 13: (-200, 0), 14: (200, 100),\
-    15: (-200, 200), 16: (200, 300), 17: (-200, 400), 18: (200, 500), 19: (-200, 600), 20: (200, 700), 21: (-200, 800), 22:(200, 900),\
-    23: (-200, 1000), 24: (200, 1100)}, colors=[x[1] for x in sorted([(n, c) for n, c in G1_labels.items()])])
-graph_utils.display_graph(RM_B25, title="The (un-positioned) second half of the counterexample to Corneil.")
+
+groups_1 = [[0, 3, 5, 6], [10, 11, 12, 13, 14, 15, 17, 19, 20, 22, 23, 24], [1, 2, 4, 7, 8, 9], [16, 18, 21]]
+groups_2 = [[12, 15, 16, 18, 20, 23], [0, 1, 3, 5, 6, 7], [10, 11, 13, 14, 17, 19, 22, 24], [2, 4, 8, 9], [21]]
+def get_positions_from_groups_row(groups):
+    positions = {}
+    for group_id in range(0, len(groups)):
+        group = groups[group_id]
+        x = group_id * 130
+        y = (len(group) / 2) * 100
+        for element in group:
+            positions[element] = (x, y)
+            y -= 100
+    return positions
+def get_positions_from_groups_axial(groups):
+    radial_dir = [1, 0]
+    positions = {}
+    for group_id in range(0, len(groups)):
+        group = groups[group_id]
+        d = 100
+        for element in group:
+            positions[element] = (d * radial_dir[0], d * radial_dir[1])
+            d += 100
+        radial_dir = [radial_dir[1] * -1, radial_dir[0]]
+    return positions
+positions_1 = get_positions_from_groups_row(groups_1)
+positions_2 = get_positions_from_groups_axial(groups_2)
+positions_2[21] = (-300, -500)
+
+graph_utils.display_graph(RM_A25, title="The counterexample to Corneil (1st half).", positions=positions_1,\
+    colors=[x[1] for x in sorted([(n, c) for n, c in G1_labels.items()])])
+graph_utils.display_graph(RM_B25, title="The counterexample to Corneil (2nd half).", positions=positions_2,\
+    colors=[x[1] for x in sorted([(n, c) for n, c in G2_labels.items()])])
 exit()
 
 

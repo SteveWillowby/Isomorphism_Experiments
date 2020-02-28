@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 
 # def permute_node_labels(G):
 
+# Returns a new graph where the node ids are changed according to the relabeling dict.
+# def relabeled_graph(G, relabeling):
+
 # def make_graph_with_same_degree_dist(G):
 
 # def is_3_SR(G):
@@ -89,16 +92,16 @@ def induced_subgraph(G, nodes):
 
 def permute_node_labels(G):
     nodes = list(G.nodes())
-    N = len(nodes)
-    permutation = np.random.permutation([i for i in range(0, N)])
-    # print(permutation)
+    permutation = np.random.permutation([i for i in range(0, len(nodes))])
+    reordering = {nodes[i]: nodes[permutation[i]] for i in range(0, len(nodes))}
+    return relabeled_graph(G, reordering)
+
+def relabeled_graph(G, relabeling):
     G_prime = nx.Graph()
-    node_to_idx = {}
-    for i in range(0, N):
-        node_to_idx[nodes[i]] = i
-        G_prime.add_node(i)
-    for edge in G.edges():
-        G_prime.add_edge(permutation[node_to_idx[edge[0]]], permutation[node_to_idx[edge[1]]])
+    for node in G.nodes():
+        G_prime.add_node(relabeling[node])
+    for (a, b) in G.edges():
+        G_prime.add_edge(relabeling[a], relabeling[b])
     return G_prime
     
 def make_graph_with_same_degree_dist(G):
