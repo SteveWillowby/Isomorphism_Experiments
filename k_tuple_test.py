@@ -10,13 +10,15 @@ def k_tuple_check(G1, G2, exact_k=None):
     G2_nodes = list(G2P.nodes())
     G1_max = max(G1_nodes) + 1
     G2_max = max(G2_nodes) + 1
-    G1P.add_node(G1_max)
-    G2P.add_node(G2_max)
+    G1P2 = nx.Graph(G1P)
+    G1P2.add_node(G1_max)
+    G2P2 = nx.Graph(G2P)
+    G2P2.add_node(G2_max)
     for node in G1_nodes:
-        G1P.add_edge(node, G1_max)
+        G1P2.add_edge(node, G1_max)
     for node in G2_nodes:
-        G2P.add_edge(node, G2_max)
-    G3 = graph_utils.graph_union(G1P, G2P)
+        G2P2.add_edge(node, G2_max)
+    G3 = graph_utils.graph_union(G1P2, G2P2)
     if exact_k is not None:
         labels = KTupleTest(G3, k=exact_k, mode="Servant").internal_labels
         return labels[G1_max] == labels[G1_max + G2_max + 1]
@@ -118,6 +120,10 @@ class KTupleTest:
                 alg_utils.further_sort_by(new_labels, old_labels)
                 new_labels = {n: l for (l, n) in new_labels}
                 comp_result = WL(self.G, new_labels, return_comparable_output=True)
+                # new_labels = KTupleTest(self.G, k=0, external_labels=new_labels, mode="Servant").internal_labels
+                # if type(new_labels) is list:
+                #     new_labels = {i: new_labels[i] for i in range(0, len(new_labels))}
+                # comp_result = QuotientGraph(self.G, new_labels)
                 # label_matching = BeforeAfterLabels(old_labels, new_labels)
                 l = (self.tuple_labels[tup], comp_result)
             ids.append((l, tup))
