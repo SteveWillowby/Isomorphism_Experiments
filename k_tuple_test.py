@@ -23,6 +23,8 @@ def k_tuple_check(G1, G2, exact_k=None):
         labels = KTupleTest(G3, k=exact_k, mode="Servant").internal_labels
         return labels[G1_max] == labels[G1_max + G2_max + 1]
     for k in range(0, len(G1_nodes) - 1):
+        if k == 3:
+            exit()
         labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
         if labels[G1_max] != labels[G1_max + G2_max + 1]:
             return False
