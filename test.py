@@ -6,7 +6,6 @@ from networkx.algorithms.components import is_connected
 from some_srgs import *
 from faster_neighbors_revisited import *
 from neighbors_revisited import *
-from miyazaki_graphs import *
 from rudolf_mathon import *
 from paths import *
 from run_nauty import *
@@ -31,12 +30,12 @@ for i in range(0, len(G_25_12)):
 Pet = graph_utils.peterson_graph()
 Gen1 = graph_utils.gen_graph_1()
 Gen1Cycles = graph_utils.gen_graph_1_cycles()
-M2 = miyazaki_graph(2)
-M3 = miyazaki_graph(3)
-M4 = miyazaki_graph(4)
-M5 = miyazaki_graph(5)
-M10 = miyazaki_graph(10)
-M100 = miyazaki_graph(100)
+M2 = graph_utils.miyazaki_graph(2)
+M3 = graph_utils.miyazaki_graph(3)
+M4 = graph_utils.miyazaki_graph(4)
+M5 = graph_utils.miyazaki_graph(5)
+M10 = graph_utils.miyazaki_graph(10)
+M100 = graph_utils.miyazaki_graph(100)
 
 RM_A25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A25())
 RM_B25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B25())
