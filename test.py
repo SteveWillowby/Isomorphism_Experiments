@@ -16,7 +16,6 @@ import graph_utils
 import alg_utils
 import time
 
-
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
@@ -77,88 +76,6 @@ base_2000_b = nx.read_adjlist("sat_cfi_dim/converted/sat_cfi_base_2000_b.edge_li
 #base_0100_b = nx.Graph(base_0100_b)
 base_2000_a = nx.Graph(base_2000_a)
 base_2000_b = nx.Graph(base_2000_b)
-
-G1 = RM_A25
-G2 = graph_utils.permute_node_labels(RM_B25)
-G2 = RM_B25
-
-G1_labels = KTupleTest(G1, k=2, external_labels=[0 if i == 0 else 0 for i in range(0, 25)], mode="Servant").internal_labels
-G2_labels = KTupleTest(G2, k=2, external_labels=[0 if i == 0 else 0 for i in range(0, 25)], mode="Servant").internal_labels
-
-if type(G1_labels) is list:
-    G1_labels = {i: G1_labels[i] for i in range(0, len(G1_labels))}
-if type(G2_labels) is list:
-    G2_labels = {i: G2_labels[i] for i in range(0, len(G2_labels))}
-
-# print(G1_labels)
-# print(G2_labels)
-
-G1_labels_QG = QuotientGraph(G1, G1_labels)
-G2_labels_QG = QuotientGraph(G2, G2_labels)
-
-print(G1_labels_QG == G2_labels_QG)
-
-G1_sub1 = graph_utils.induced_subgraph(G1, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
-G1_sub2 = graph_utils.induced_subgraph(G1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-G2_sub1 = graph_utils.induced_subgraph(G2, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
-G2_sub2 = graph_utils.induced_subgraph(G2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-# print(k_tuple_check(G1_sub1, G2_sub1))
-# print(k_tuple_check(G1_sub2, G2_sub2))
-# graph_utils.display_graph(G1_sub1)
-# graph_utils.display_graph(G2_sub1)
-# graph_utils.display_graph(G1_sub2)
-# graph_utils.display_graph(G2_sub2)
-
-"""
-G1_NC_labels = {i: KTupleTest(G1, k=0, external_labels=[1 if j == i else 0 for j in range(0, 25)], mode="Servant").internal_labels for i in range(0, 25)}
-G2_NC_labels = {i: KTupleTest(G2, k=0, external_labels=[1 if j == i else 0 for j in range(0, 25)], mode="Servant").internal_labels for i in range(0, 25)}
-if type(G1_NC_labels[0]) is list:
-    G1_NC_labels = {i: {j: G1_NC_labels[i][j] for j in range(0, 25)} for i in range(0, 25)}
-if type(G2_NC_labels[0]) is list:
-    G2_NC_labels = {i: {j: G2_NC_labels[i][j] for j in range(0, 25)} for i in range(0, 25)}
-
-print(G1_NC_labels[16])
-print(G2_NC_labels[16])
-
-for i in range(0, 25):
-    print("%d:" % i)
-    print(QuotientGraph(G1, G1_NC_labels[i]).value)
-    print(QuotientGraph(G2, G2_NC_labels[i]).value)
-"""
-
-groups_1 = [[0, 3, 5, 6], [10, 11, 12, 13, 14, 15, 17, 19, 20, 22, 23, 24], [1, 2, 4, 7, 8, 9], [16, 18, 21]]
-groups_2 = [[12, 15, 16, 18, 20, 23], [0, 1, 3, 5, 6, 7], [10, 11, 13, 14, 17, 19, 22, 24], [2, 4, 8, 9], [21]]
-def get_positions_from_groups_row(groups):
-    positions = {}
-    for group_id in range(0, len(groups)):
-        group = groups[group_id]
-        x = group_id * 130
-        y = (len(group) / 2) * 100
-        for element in group:
-            positions[element] = (x, y)
-            y -= 100
-    return positions
-def get_positions_from_groups_axial(groups):
-    radial_dir = [1, 0]
-    positions = {}
-    for group_id in range(0, len(groups)):
-        group = groups[group_id]
-        d = 100
-        for element in group:
-            positions[element] = (d * radial_dir[0], d * radial_dir[1])
-            d += 100
-        radial_dir = [radial_dir[1] * -1, radial_dir[0]]
-    return positions
-positions_1 = get_positions_from_groups_row(groups_1)
-positions_2 = get_positions_from_groups_axial(groups_2)
-positions_2[21] = (-300, -500)
-
-graph_utils.display_graph(RM_A25, title="The counterexample to Corneil (1st half).", positions=positions_1,\
-    colors=[x[1] for x in sorted([(n, c) for n, c in G1_labels.items()])])
-graph_utils.display_graph(RM_B25, title="The counterexample to Corneil (2nd half).", positions=positions_2,\
-    colors=[x[1] for x in sorted([(n, c) for n, c in G2_labels.items()])])
-exit()
-
 
 if False:
     edge_types = {}
