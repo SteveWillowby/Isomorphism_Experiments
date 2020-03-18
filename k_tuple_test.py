@@ -24,6 +24,9 @@ def k_tuple_check(G1, G2, exact_k=None):
         return labels[G1_max] == labels[G1_max + G2_max + 1]
     for k in range(0, len(G1_nodes) - 1):
         if k == 3:
+            print("Here's the k=3 graph pair!")
+            print(G1.edges())
+            print(G2.edges())
             exit()
         labels = KTupleTest(G3, k=k, mode="Servant").internal_labels
         if labels[G1_max] != labels[G1_max + G2_max + 1]:

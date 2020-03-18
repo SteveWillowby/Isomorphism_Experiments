@@ -19,11 +19,16 @@ A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
 A3 = graph_from_srg_string(GRAPH_STRING_A3)
 A4 = graph_from_srg_string(GRAPH_STRING_A4)
-G_25_12 = [graph_from_srg_string(s) for s in GS_25_12]
+G_25_12 = [graph_from_srg_string(s) for s in GS_25_12_5_6]
 G_25_12_COMP = []
 for i in range(0, len(G_25_12)):
     for j in range(i, len(G_25_12)):
         G_25_12_COMP.append((G_25_12[i], G_25_12[j]))
+
+SMALL_SRS_COMP = [(GS_5_2_0_1[0], GS_5_2_0_1[0]), (GS_9_4_1_2[0], GS_9_4_1_2[0]), (GS_10_3_0_1[0], GS_10_3_0_1[0]), (GS_13_6_2_3[0], GS_13_6_2_3[0]),\
+    (GS_15_6_1_3[0], GS_15_6_1_3[0]), (GS_16_5_0_2[0], GS_16_5_0_2[0]), (GS_16_6_2_2[0], GS_16_6_2_2[0]), (GS_16_6_2_2[1], GS_16_6_2_2[1]),\
+    (GS_16_6_2_2[0], GS_16_6_2_2[1]), (GS_17_8_3_4[0], GS_17_8_3_4[0]), (GS_21_10_3_6[0], GS_21_10_3_6[0])]
+SMALL_SRS_COMP = [(graph_from_srg_string(a), graph_from_srg_string(b)) for (a, b) in SMALL_SRS_COMP]
 
 # test = PathSteps(A2)
 
@@ -39,6 +44,8 @@ M100 = graph_utils.miyazaki_graph(100)
 
 RM_A25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A25())
 RM_B25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B25())
+# RM_A25 = graph_utils.graph_complement(RM_A25)  # Taking complement does not change the k for these graphs.
+# RM_B25 = graph_utils.graph_complement(RM_B25)
 RM_A35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A35())
 RM_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B35())
 RM_E72_A35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_A35())
@@ -58,6 +65,7 @@ print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 # COMPARISONS = G_25_12_COMP
+# COMPARISONS = SMALL_SRS_COMP
 COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
 JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)

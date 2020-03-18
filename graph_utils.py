@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-# def display_graph(G):
+# def display_graph(G, title="A graph", colors='yellow', positions=None):
 
 # def zero_indexed_graph(G):
 
@@ -29,6 +29,8 @@ import matplotlib.pyplot as plt
 # def graph_from_matrix(M, allow_self_loops=False):
 
 # def complement_of_graph_matrix(M, allow_self_loops=False):
+
+# def graph_complement(G):
 
 # Takes a graph a forms a meta-graph where each node is a copy of G and each edge is a single node which all
 #   nodes in two copies of G connect to.
@@ -238,6 +240,17 @@ def complement_of_graph_matrix(M, allow_self_loops=False):
         for i in range(0, len(C)):
             C[i][i] = 0
     return C
+
+def graph_complement(G):
+    G_new = nx.Graph()
+    nodes = list(G.nodes())
+    for node in nodes:
+        G_new.add_node(node)
+    for i in range(0, len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            if not G.has_edge(nodes[i], nodes[j]):
+                G_new.add_edge(nodes[i], nodes[j])
+    return G_new
 
 def Justus_square_1(G):
     G = zero_indexed_graph(G)
