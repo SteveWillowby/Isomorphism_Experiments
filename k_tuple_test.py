@@ -74,7 +74,7 @@ class KTupleTest:
         # !!!!!!!!!!!!!!!!!!!!! TODO: ASSESS WHETHER OR NOT i SHOULD START AT 1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for i in range(max_tuple_size, max_tuple_size + 1):
-            tuple_candidates = alg_utils.get_all_k_tuples(len(self.nodes), i)
+            tuple_candidates = alg_utils.get_all_k_sets(len(self.nodes), i)
             for candidate in tuple_candidates:
                 comp = node_to_component_mapping[candidate[0]]
                 all_same_comp = True

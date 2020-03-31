@@ -39,7 +39,7 @@ def jointly_further_sort_by_and_compare(l1, d1, l2, d2):
 
 # Returns False if the tuple cannot be incremented. True otherwise. Modifies t in place.
 # n is the number of values a variable in the tuple may take. Values are zero-indexed.
-def increment_k_tuple(t, n):
+def increment_k_set(t, n):
     idx_to_increment = len(t) - 1
     max_idx = n - 1
     while idx_to_increment >= 0 and t[idx_to_increment] == max_idx:
@@ -52,10 +52,10 @@ def increment_k_tuple(t, n):
         t[j] = t[j - 1] + 1
     return True
 
-def get_all_k_tuples(n, k):
+def get_all_k_sets(n, k):
     current_tuple = [i for i in range(0, k)]
     stored_tuples = [tuple(current_tuple)]
-    while increment_k_tuple(current_tuple, n):
+    while increment_k_set(current_tuple, n):
         stored_tuples.append(tuple(current_tuple))
     return stored_tuples
 

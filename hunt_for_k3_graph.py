@@ -15,7 +15,7 @@ def enumerate_n_choose_k_graph_pairings(n, k, N):
     for i in range(0, n):
         basic_graph.add_node(i)
     next_node = n
-    for neighbors in alg_utils.get_all_k_tuples(n, k):
+    for neighbors in alg_utils.get_all_k_sets(n, k):
         basic_graph.add_node(next_node)
         for neighbor in neighbors:
             basic_graph.add_edge(next_node, neighbor)
@@ -109,7 +109,7 @@ def enumerate_n_choose_k_graph_pairings_helper(N, current_graph, unpaired_A_node
             enumerate_n_choose_k_graph_pairings_helper(N, new_graph, new_A, new_B,\
                 bank_of_already_seen_graph_types, finished_graphs)
 
-graphs_yo = enumerate_n_choose_k_graph_pairings(5, 2, N)
+graphs_yo = enumerate_n_choose_k_graph_pairings(6, 3, N)
 print(len(graphs_yo))
 """
 for graph in graphs_yo:
@@ -124,7 +124,7 @@ for i in range(0, len(graphs_yo)):
     for j in range(i, len(graphs_yo)):
         print("%d vs %d:" % (i, j)) 
         sys.stdout.flush()
-        for k in range(0, 10):
+        for k in range(0, 5):
             equal = k_tuple_check(graphs_yo[i], graph_utils.permute_node_labels(graphs_yo[j]))
         print("Predicted: %s" % equal)
         print("----")
