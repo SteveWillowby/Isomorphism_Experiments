@@ -37,6 +37,17 @@ def jointly_further_sort_by_and_compare(l1, d1, l2, d2):
         l2[i] = (new_id_2, l2[i][1])
     return all_equal
 
+def list_of_sorted_pairs_to_id_dict(the_list):
+    next_color = -1
+    prev_value = None
+    ids = {}
+    for (value, element) in the_list:
+        if prev_value is None or prev_value != value:
+            prev_value = value
+            next_color += 1
+        ids[element] = next_color
+    return ids
+
 # Returns False if the tuple cannot be incremented. True otherwise. Modifies t in place.
 # n is the number of values a variable in the tuple may take. Values are zero-indexed.
 def increment_k_set(t, n):
@@ -59,6 +70,7 @@ def get_all_k_sets(n, k):
         stored_tuples.append(tuple(current_tuple))
     return stored_tuples
 
+""" CURRENTLY INCORRECT!
 def increment_k_permutation(p, n):
     idx_to_increment = len(p) - 1
     while idx_to_increment >= 0 and p[idx_to_increment] == n - 1:
@@ -74,5 +86,24 @@ def get_all_k_permutations(n, k):
     current_tuple = [0 for i in range(0, k)]
     stored_tuples = [tuple(current_tuple)]
     while increment_k_permutation(current_tuple, n):
+        stored_tuples.append(tuple(current_tuple))
+    return stored_tuples
+"""
+
+def increment_k_tuple(t, n):
+    idx_to_increment = len(t) - 1
+    while idx_to_increment >= 0 and t[idx_to_increment] == n - 1:
+        idx_to_increment -= 1
+    if idx_to_increment < 0:
+        return False
+    t[idx_to_increment] += 1
+    for j in range(idx_to_increment + 1, len(t)):
+        t[j] = 0
+    return True
+
+def get_all_k_tuples(n, k):
+    current_tuple = [0 for i in range(0, k)]
+    stored_tuples = [tuple(current_tuple)]
+    while increment_k_tuple(current_tuple, n):
         stored_tuples.append(tuple(current_tuple))
     return stored_tuples

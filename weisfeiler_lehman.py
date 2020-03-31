@@ -1,5 +1,6 @@
 import networkx as nx
 import alg_utils
+import corneil_thesis
 
 # Assumes the input graph is zero-indexed.
 # Also assumes the coloring is sorted by node index.
@@ -147,88 +148,107 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
         comparable_output.append((len(node_set) + 1, tuple(sorted([node_to_color[n] for n in neighbor_lists[a_node]]))))
     return tuple(comparable_output)
 
-def k_dim_WL_test(G1, G2, k):
-    print("Beginning %d-dim WL test" % k)
-    G1_max = max(G1.nodes()) + 1  # Connect all nodes to a single node.
-    G2_max = max(G2.nodes()) + 1  # Connect all nodes to a single node.
-    G1_nodes = [(1, n) for n in G1.nodes()] + [(1, G1_max)]
-    G2_nodes = [(2, n) for n in G2.nodes()] + [(2, G2_max)]
-    if len(G1_nodes) != len(G2_nodes):
-        return False
-    G1_edges = [((1, min(a, b)), (1, max(a, b))) for (a, b) in G1.edges()] + [((1, n), (1, G1_max)) for n in G1.nodes()]
-    G2_edges = [((2, min(a, b)), (2, max(a, b))) for (a, b) in G2.edges()] + [((2, n), (2, G2_max)) for n in G2.nodes()]
-    if len(G1_edges) != len(G2_edges):
-        return False
+# If k <= 1, assumes G is zero-indexed.
+def k_dim_WL_coloring(G, k, init_coloring=None):
+    if init_coloring is None:
+        init_coloring = {n: 0 for n in G.nodes()}
+    node_coloring = dict(init_coloring)
+    if k <= 1:
+        WL(G, node_coloring)
+        if type(node_coloring) is list:
+            node_coloring = {i: node_coloring[i] for i in range(0, len(node_coloring))}
+        return node_coloring
 
-    edges = set(G1_edges + G2_edges)
-    nodes = G1_nodes + G2_nodes
+    nodes = list(G.nodes())
 
-    k_tups = alg_utils.get_all_k_permutations(len(G1_nodes), k)
-    k_tups = [tuple([G1_nodes[idx] for idx in k_tup]) for k_tup in k_tups] + [tuple([G2_nodes[idx] for idx in k_tup]) for k_tup in k_tups]
-    print("Got tups")
+    tuples = alg_utils.get_all_k_tuples(len(nodes), k)
+    tuples = [tuple([nodes[idx] for idx in k_tup]) for k_tup in tuples]
+    tuple_bank = {tup: tup for tup in tuples}  # Allows referencing a 'canonical' copy of the tuple so that memory is not wasted.
 
-    k_tup_labels = []
-    for k_tup in k_tups:
-        label = []
-        for var_a in k_tup:
-            for var_b in k_tup:
-                var_min = min(var_a, var_b)
-                var_max = max(var_a, var_b)
-                label.append(int((var_min, var_max) in edges))
-        k_tup_labels.append((label, k_tup))
-    k_tup_labels.sort()
+    # Fill out neighbors data.
+    neighbors = {tup: [[] for i in range(0, k)] for tup in tuples}
+    for tup in tuples:
+        for n in nodes:
+            if n not in tup:
+                for i in range(0, k):
+                    new_list = list(tup)
+                    new_list[i] = n
+                    neighbors[tup][i].append(tuple_bank[tuple(new_list)])
 
-    next_integer_label = 0
-    new_k_tup_labels = {k_tup_labels[0][1]: 0}
-    prev_label = k_tup_labels[0][0]
-    for i in range(1, len(k_tup_labels)):
-        if k_tup_labels[i][0] != prev_label:
-            next_integer_label += 1
-            prev_label = k_tup_labels[i][0]
-        new_k_tup_labels[k_tup_labels[i][1]] = next_integer_label
-    k_tup_labels = new_k_tup_labels
-
-    total_num_integer_labels = next_integer_label + 1
-    print("Got initial labels")
-
-    # Now that the initial labels have been assigned...
-    # Assign neighbors.
-    neighbors = {k_tup: [] for k_tup in k_tups}
-    for k_tup in k_tups:
+    # BEGIN assigning initial colors:
+    tuple_coloring = []
+    for tup in tuples:
+        structure_list = []  # Contains edge info AND notes whether ith node is the same as the jth node.
         for i in range(0, k):
-            for j in range(0, len(nodes)):
-                if nodes[j] != k_tup[i] and nodes[j][0] == k_tup[i][0]:  # If different but from same graph...
-                    new_tup = [elt for elt in k_tup]
-                    new_tup[i] = nodes[j]
-                    neighbors[k_tup].append(tuple(new_tup))
-    print("Got neighbors")
+            for j in range(i + 1, k):
+                structure_list.append((G.has_edge(tup[i], tup[j]), tup[i] == tup[j]))
+        tuple_coloring.append(((tuple([node_coloring[n] for n in tup]), tuple(structure_list)), tup))
+    tuple_coloring.sort()
 
-    # Main algorithm loop:
-    prev_num_integer_labels = 0
-    while total_num_integer_labels != prev_num_integer_labels:
-        # Acquire new labels.
-        new_k_tup_labels = [((k_tup_labels[k_tup], sorted([k_tup_labels[neighbor] for neighbor in neighbors[k_tup]])), k_tup) for k_tup in k_tups]
-        new_k_tup_labels.sort()
-        next_integer_label = 0
-        new_new_k_tup_labels = {new_k_tup_labels[0][1]: 0}
-        prev_label = new_k_tup_labels[0][0]
-        for i in range(1, len(new_k_tup_labels)):
-            if new_k_tup_labels[i][0] != prev_label:
-                next_integer_label += 1
-                prev_label = new_k_tup_labels[i][0]
-            new_new_k_tup_labels[new_k_tup_labels[i][1]] = next_integer_label
-        k_tup_labels = new_new_k_tup_labels
+    tuple_coloring = alg_utils.list_of_sorted_pairs_to_id_dict(tuple_coloring)
+    # END assigning initial colors.
 
-        prev_num_integer_labels = total_num_integer_labels
-        total_num_integer_labels = next_integer_label + 1
+    # Enter main computation.
+    done = False
+    while not done:
+        prev_tuple_coloring = dict(tuple_coloring)
+        tuple_coloring = [((tuple_coloring[tup],\
+            tuple(sorted([ tuple(sorted([tuple_coloring[n_tup] for n_tup in neighbors[tup][i]])) for i in range(0, k) ]))), tup) for tup in tuples]
+        tuple_coloring.sort()
+        next_color = -1
+        prev_value = ()
+        new_tuple_coloring = {}
+        done = True
+        for i in range(0, len(tuple_coloring)):
+            (value, tup) = tuple_coloring[i]
+            if value != prev_value:
+                next_color += 1
+                prev_value = value
+            new_tuple_coloring[tup] = next_color
+            if prev_tuple_coloring[tup] != next_color:  # If anything changed, carry on.
+                done = False
+        tuple_coloring = new_tuple_coloring
 
-    # Now check to see if there is an overlap of labels...
-    first_tup = k_tups[0]
-    for i in range(1, len(k_tups)):
-        other_tup = k_tups[i]
-        if other_tup[0][0] != first_tup[0][0] and k_tup_labels[first_tup] == k_tup_labels[other_tup]: # Different graphs but same labels.
-            return True
-    return False
+    # Convert tuple colors into node colors.
+    new_node_coloring = {n: [[] for i in range(0, k)] for n in nodes}
+    for tup in tuples:
+        for i in range(0, k):
+            new_node_coloring[tup[i]][i].append(tuple_coloring[tup])
+    for n in nodes:
+        for i in range(0, k):
+            new_node_coloring[n][i].sort()
+    new_node_coloring = [(new_node_coloring[n], n) for n in nodes]
+    new_node_coloring.sort()
+
+    return alg_utils.list_of_sorted_pairs_to_id_dict(new_node_coloring)
+
+# If k <= 1, assumes G is zero-indexed.
+def l_nodes_k_dim_WL_coloring(G, l, k, init_coloring=None):
+    if init_coloring is None:
+        init_coloring = {n: 0 for n in G.nodes()}
+    node_coloring = dict(init_coloring)
+
+    nodes = list(G.nodes())
+
+    l_tuples = alg_utils.get_all_k_tuples(len(nodes), l)
+    l_tuples = [tuple([nodes[n] for n in tup]) for tup in l_tuples]
+
+    l_tuple_results = {}
+    for l_tup in l_tuples:
+        modified_coloring = [((n not in l_tup, node_coloring[n]), n) for n in nodes]
+        modified_coloring.sort()
+        modified_coloring = alg_utils.list_of_sorted_pairs_to_id_dict(modified_coloring)
+        new_coloring = k_dim_WL_coloring(G, k, init_coloring=modified_coloring)
+        the_quotient_graph = corneil_thesis.QuotientGraph(G, new_coloring)
+        l_tuple_results[l_tup] = the_quotient_graph
+
+    node_results = {n: [[] for i in range(0, l)] for n in nodes}
+    for l_tup, result in l_tuple_results.items():
+        for i in range(0, l):
+            node_results[l_tup[i]][i].append(result)
+    node_results = [([sorted(result_list) for result_list in results], n) for n, results in node_results.items()]
+    node_results.sort()
+    return alg_utils.list_of_sorted_pairs_to_id_dict(node_results)
 
 """
 G = nx.Graph()
