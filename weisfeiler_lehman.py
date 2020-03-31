@@ -148,6 +148,11 @@ def WL(G, coloring_list, edge_types=None, init_active_set=None, return_comparabl
         comparable_output.append((len(node_set) + 1, tuple(sorted([node_to_color[n] for n in neighbor_lists[a_node]]))))
     return tuple(comparable_output)
 
+def __tuple_substitute(t, idx, element):
+    l = list(t)
+    l[idx] = element
+    return tuple(l)
+
 # If k <= 1, assumes G is zero-indexed.
 def k_dim_WL_coloring(G, k, init_coloring=None):
     if init_coloring is None:
@@ -164,16 +169,6 @@ def k_dim_WL_coloring(G, k, init_coloring=None):
     tuples = alg_utils.get_all_k_tuples(len(nodes), k)
     tuples = [tuple([nodes[idx] for idx in k_tup]) for k_tup in tuples]
     tuple_bank = {tup: tup for tup in tuples}  # Allows referencing a 'canonical' copy of the tuple so that memory is not wasted.
-
-    # Fill out neighbors data.
-    neighbors = {tup: [[] for i in range(0, k)] for tup in tuples}
-    for tup in tuples:
-        for n in nodes:
-            if n not in tup:
-                for i in range(0, k):
-                    new_list = list(tup)
-                    new_list[i] = n
-                    neighbors[tup][i].append(tuple_bank[tuple(new_list)])
 
     # BEGIN assigning initial colors:
     tuple_coloring = []
@@ -192,8 +187,10 @@ def k_dim_WL_coloring(G, k, init_coloring=None):
     done = False
     while not done:
         prev_tuple_coloring = dict(tuple_coloring)
+        assert (0, 24, 24) in tuple_coloring
         tuple_coloring = [((tuple_coloring[tup],\
-            tuple(sorted([ tuple(sorted([tuple_coloring[n_tup] for n_tup in neighbors[tup][i]])) for i in range(0, k) ]))), tup) for tup in tuples]
+            tuple(sorted([tuple([tuple_coloring[__tuple_substitute(tup, i, n)] for i in range(0, k)]) for n in nodes]))), tup) for tup in tuples]
+            # tuple(sorted([ tuple(sorted([tuple_coloring[n_tup] for n_tup in neighbors[tup][i]])) for i in range(0, k) ]))), tup) for tup in tuples]
         tuple_coloring.sort()
         next_color = -1
         prev_value = ()

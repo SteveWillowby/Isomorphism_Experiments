@@ -73,7 +73,7 @@ JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # COMPARISONS = [(RM_E72_A35, RM_E72_A35), (RM_E72_B35, RM_E72_B35), (RM_E72_A35, RM_E72_B35)]
 
 print(l_nodes_k_dim_WL_coloring(RM_A25, 3, 1))
-print(k_dim_WL_coloring(RM_A25, 4))
+print(k_dim_WL_coloring(RM_A25, 3))
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/converted/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
