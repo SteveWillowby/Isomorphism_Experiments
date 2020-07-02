@@ -14,6 +14,7 @@ from corneil_thesis import *
 import graph_utils
 import alg_utils
 import time
+from edge_xor_estimates import xor_estimate
 
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
@@ -51,29 +52,29 @@ RM_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B35())
 RM_E72_A35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_A35())
 RM_E72_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_B35())
 
-print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
-print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
-print("Is Gen1Cycles 3SR? %s" % graph_utils.is_3_SR(Gen1Cycles))
-print("Is M3 3SR? %s" % graph_utils.is_3_SR(M3))
-print("Is A1 3SR? %s" % graph_utils.is_3_SR(A1))
-print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
-print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
-print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
-print("Is RM_A35 3SR? %s" % graph_utils.is_3_SR(RM_A35))
-print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
+#print("Is peterson 3SR? %s" % graph_utils.is_3_SR(Pet))
+#print("Is Gen1 3SR? %s" % graph_utils.is_3_SR(Gen1))
+#print("Is Gen1Cycles 3SR? %s" % graph_utils.is_3_SR(Gen1Cycles))
+#print("Is M3 3SR? %s" % graph_utils.is_3_SR(M3))
+#print("Is A1 3SR? %s" % graph_utils.is_3_SR(A1))
+#print("Is A2 3SR? %s" % graph_utils.is_3_SR(A2))
+#print("Is A3 3SR? %s" % graph_utils.is_3_SR(A3))
+#print("Is A4 3SR? %s" % graph_utils.is_3_SR(A4))
+#print("Is RM_A35 3SR? %s" % graph_utils.is_3_SR(RM_A35))
+#print("Is RM_E72_A35 3SR? %s" % graph_utils.is_3_SR(RM_E72_A35))
 
 # COMPARISONS = [(Gen1, Gen1), (Gen1Cycles, Gen1Cycles), (Pet, Pet),(M2, M2),(M3,M3), (M4,M4),(M5, M5),(M10,M10),(M100,M100)]
 # COMPARISONS = [(A2, A2), (A1, A3), (A2, A2), (A1,A2),(A1,A3),(A1,A4),(A2,A4),(A3,A4)]
 # COMPARISONS = G_25_12_COMP
 # COMPARISONS = SMALL_SRS_COMP
-COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
-JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
+# COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
+# JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)
 # COMPARISONS = [(RM_A25, RM_A25), (JS1_RM_A25, JS1_RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
 # COMPARISONS = [(RM_E72_A35, RM_E72_A35), (RM_E72_B35, RM_E72_B35), (RM_E72_A35, RM_E72_B35)]
 
-print(l_nodes_k_dim_WL_coloring(RM_A25, 3, 1))
-print(k_dim_WL_coloring(RM_A25, 3))
+# print(l_nodes_k_dim_WL_coloring(RM_A25, 3, 1))
+# print(k_dim_WL_coloring(RM_A25, 3))
 
 bench_d3_a = nx.read_adjlist("benchmark_graphs/cfi-rigid-d3/converted/cfi-rigid-d3-3600-01-1.edge_list", create_using=nx.Graph, nodetype=int)
 bench_d3_a = graph_utils.zero_indexed_graph(bench_d3_a)
@@ -111,7 +112,7 @@ if False:
     print("New Code's Time")
     print(time.time() - start_time)
 
-# COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_a)), (base_2000_a, graph_utils.permute_node_labels(base_2000_b))]
+COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_b)), (base_2000_a, graph_utils.permute_node_labels(base_2000_a))]
 # COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
 
 GWat = nx.Graph()
@@ -151,7 +152,7 @@ for i in range(0, len(COMPARISONS)):
             print("Bad: G disconnected")
             continue
         good = True
-        G_prime = graph_utils.make_graph_with_same_degree_dist(G)
+        # G_prime = graph_utils.make_graph_with_same_degree_dist(G)
         # G_prime = graph_utils.permute_node_labels(G)
 
     (G, G_prime) = COMPARISONS[i]
@@ -168,7 +169,7 @@ for i in range(0, len(COMPARISONS)):
     #print("...")
     #predict_iso = c_desc_G == c_desc_G_prime
     #print("Starting our prediction...")
-    predict_iso = k_tuple_check(G, G_prime) # exact_k=2
+    predict_iso = xor_estimate(G, G_prime, desired_confidence=0.99) # exact_k=2
     # predict_iso = k_dim_WL_test(G, G_prime, 2)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
