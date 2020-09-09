@@ -15,6 +15,7 @@ import graph_utils
 import alg_utils
 import time
 from edge_xor_estimates import xor_estimate
+from random_bijections import overlap_comparison
 
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
@@ -70,7 +71,7 @@ RM_E72_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_B35())
 # COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
 # JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)
-# COMPARISONS = [(RM_A25, RM_A25), (JS1_RM_A25, JS1_RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
+COMPARISONS = [(RM_A25, RM_B25), (RM_A25, RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
 # COMPARISONS = [(RM_E72_A35, RM_E72_A35), (RM_E72_B35, RM_E72_B35), (RM_E72_A35, RM_E72_B35)]
 
 # print(l_nodes_k_dim_WL_coloring(RM_A25, 3, 1))
@@ -112,7 +113,7 @@ if False:
     print("New Code's Time")
     print(time.time() - start_time)
 
-COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_b)), (base_2000_a, graph_utils.permute_node_labels(base_2000_a))]
+# COMPARISONS = [(base_2000_a, graph_utils.permute_node_labels(base_2000_b)), (base_2000_a, graph_utils.permute_node_labels(base_2000_a))]
 # COMPARISONS = [(bench_d3_a, bench_d3_b), (bench_d3_a, bench_d3_a)]
 
 GWat = nx.Graph()
@@ -168,8 +169,9 @@ for i in range(0, len(COMPARISONS)):
     #c_desc_G_prime = KTupleTest(G_prime, k=2)
     #print("...")
     #predict_iso = c_desc_G == c_desc_G_prime
-    #print("Starting our prediction...")
-    predict_iso = xor_estimate(G, G_prime, desired_confidence=0.99) # exact_k=2
+    print("Starting our prediction...")
+    predict_iso = overlap_comparison(G, G_prime)
+
     # predict_iso = k_dim_WL_test(G, G_prime, 2)
     print("Got prediction: %s" % predict_iso)
     # print(c_desc_G.mapping_to_labels)
