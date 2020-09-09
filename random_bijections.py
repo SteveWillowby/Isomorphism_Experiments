@@ -34,7 +34,7 @@ def overlap_comparison(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    num_measurements = (len(G1.edges())**4) * 1
+    num_measurements = (len(G1.nodes())**4) * 1
     G1G1_values = {i: 0 for i in range(0, len(G1.edges()) + 1)}
     G1G2_values = {i: 0 for i in range(0, len(G1.edges()) + 1)}
     print("Target: %d" % num_measurements)
@@ -109,4 +109,4 @@ def overlap_comparison(G1, G2):
         #     return False
         total_p_thing *= c
     print("Total p thing: %f" % total_p_thing)
-    return total_p_thing >= 0.01
+    return total_p_thing >= 0.5
