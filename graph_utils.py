@@ -18,7 +18,9 @@ import matplotlib.pyplot as plt
 # Returns a new graph where the node ids are changed according to the relabeling dict.
 # def relabeled_graph(G, relabeling):
 
-# def make_graph_with_same_degree_dist(G):
+# def make_graph_with_degree_sequence(S, require_connected=False):
+
+# def make_graph_with_same_degree_dist(G, require_connected=False):
 
 # def is_3_SR(G):
 
@@ -108,51 +110,88 @@ def relabeled_graph(G, relabeling):
         G_prime.add_edge(relabeling[a], relabeling[b])
     return G_prime
     
-def make_graph_with_same_degree_dist(G):
-    G_sequence = list(d for n, d in G.degree())
-    G_sequence.sort()
-    sorted_G_sequence = list((d, n) for n, d in G.degree())
-    sorted_G_sequence.sort(key=lambda tup: tup[0])
-    done = False
-    while not done:
-        G_prime = nx.configuration_model(G_sequence)
-        G_prime = nx.Graph(G_prime)
-        G_prime.remove_edges_from([(n, n) for n in G_prime.nodes()])
+def make_graph_with_degree_sequence(S, require_connected=False):
+    assert sum(S) % 2 == 0
+    S = sorted(S)
+    target_num_edges = int(sum(S) / 2)
+    num_simple_attempts = 1000
+    for attempt in range(0, num_simple_attempts):
+        G = nx.configuration_model(S)
+        G = nx.Graph(G)
+        G.remove_edges_from([(n, n) for n in G.nodes()])
+        if len(G.edges()) == target_num_edges:
+            if not require_connected or nx.is_connected(G):
+                return G
+
+    print("%d plain configuration_model tries failed. Moving to longer method." % num_simple_attempts)
+
+    num_complex_attempts = 1000
+    best = -1 * target_num_edges
+    for attempt in range(0, num_complex_attempts):
+        G = nx.configuration_model(S)
+        G = nx.Graph(G)
+        G.remove_edges_from([(n, n) for n in G.nodes()])
         tries = 10
-        while tries > 0 and (len(G.edges()) != len(G_prime.edges())):
-            sorted_G_prime_sequence = list((d, n) for n, d in G_prime.degree())
-            sorted_G_prime_sequence.sort(key=lambda tup: tup[0])
-            #print("Sorted G_sequence:")
-            #print(sorted_G_sequence)
-            #print("Sorted G_prime_sequence:")
-            #print(sorted_G_prime_sequence)
+        while tries > 0 and len(G.edges()) != target_num_edges:
+            generated_G_sequence = list((d, n) for n, d in G.degree())
+            generated_G_sequence.sort()
             missing = []
             for i in range(0, len(G.nodes())):
-                while sorted_G_sequence[i][0] > sorted_G_prime_sequence[i][0]:
-                    missing.append(sorted_G_prime_sequence[i][1])
-                    sorted_G_prime_sequence[i] = (sorted_G_prime_sequence[i][0] + 1, sorted_G_prime_sequence[i][1])
+                while S[i] > generated_G_sequence[i][0]:
+                    missing.append(generated_G_sequence[i][1])
+                    generated_G_sequence[i] = (generated_G_sequence[i][0] + 1, generated_G_sequence[i][1])
             missing = np.random.permutation(missing)
             if len(missing) % 2 != 0:
                 print("Sanity issue! Alert!")
-            #print("Edges before:")
-            #print(G_prime.edges())
-            #print("Missing:")
-            #print(missing)
             for i in range(0, int(len(missing) / 2)):
-                G_prime.add_edge(missing[2*i], missing[2*i + 1])
-            G_prime = nx.Graph(G_prime)
-            G_prime.remove_edges_from([(n, n) for n in G_prime.nodes()])
+                G.add_edge(missing[2*i], missing[2*i + 1])
+            G = nx.Graph(G)
+            G.remove_edges_from([(n, n) for n in G.nodes()])
             #print("Edges after:")
             #print(G_prime.edges())
             #if not is_connected(G_prime):
                 #print("Bad: G_prime disconnected")
             tries -= 1
-        if not nx.is_connected(G_prime):
+        if require_connected and not nx.is_connected(G):
             pass
-        elif len(G.edges()) == len(G_prime.edges()):
+        elif len(G.edges()) == target_num_edges:
             #print("Graph creation successful")
-            done = True
-    return G_prime
+            return G
+        elif len(G.edges()) - target_num_edges > best:
+            best = len(G.edges()) - target_num_edges
+            print(best)
+
+    print("%d longer method attempts failed. Moving to greedy deterministic method." % num_simple_attempts)
+    print("Warning! greedy deterministic method may fail!")
+    if require_connected:
+        print("Warning! require_connected is set to True, but the greedy deterministic method may produce disconnected results.")
+    return greedy_deterministic_degree_sequence_graph_model(S)
+
+def make_graph_with_same_degree_dist(G, require_connected=False):
+    return make_graph_with_degree_sequence(\
+        [len(G.neighbors(n)) for n in G.nodes()], \
+        require_connected=require_connected)
+
+def greedy_deterministic_degree_sequence_graph_model(S):
+    assert sum(S) <= len(S) * (len(S) - 1)
+    G = nx.Graph()
+    for i in range(0, len(S)):
+        G.add_node(i)
+    targets_and_nodes = [(S[i], i) for i in range(0, len(S))]
+    for _ in range(0, int(sum(S) / 2)):
+        targets_and_nodes.sort(reverse=True)
+        n1 = targets_and_nodes[0][1]
+        for j in range(1, len(S)):
+            n2 = targets_and_nodes[j][1]
+            if not G.has_edge(n1, n2):
+                G.add_edge(n1, n2)
+                targets_and_nodes[0] = (targets_and_nodes[0][0] - 1, n1)
+                targets_and_nodes[j] = (targets_and_nodes[j][0] - 1, n2)
+                break
+    for i in range(0, len(S)):
+        if targets_and_nodes[i][0] != 0:
+            print("%d: %d" % (i, targets_and_nodes[i][0]))
+    return G
 
 def is_2_SR(G):
     nodes = list(G.nodes())

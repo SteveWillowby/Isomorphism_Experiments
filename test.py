@@ -44,6 +44,10 @@ M5 = graph_utils.miyazaki_graph(5)
 M10 = graph_utils.miyazaki_graph(10)
 M100 = graph_utils.miyazaki_graph(100)
 
+RM_25_related_ER = nx.gnm_random_graph(25, 60)
+seq = [min(i + 1, max(0, 120 - int((i * (i + 1)) / 2))) for i in range(0, 25)]
+print(seq)
+RM_25_related_degree_seq = graph_utils.make_graph_with_degree_sequence(seq)
 RM_A25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_A25())
 RM_B25 = graph_utils.zero_indexed_graph(Rudolf_Mathon_B25())
 # RM_A25 = graph_utils.graph_complement(RM_A25)  # Taking complement does not change the k for these graphs.
@@ -71,7 +75,7 @@ RM_E72_B35 = graph_utils.zero_indexed_graph(Rudolf_Mathon_E72_B35())
 # COMPARISONS = [(RM_A25, RM_B25), (RM_B25, RM_B25), (RM_A25, RM_A25), (RM_A35, RM_A35), (RM_B35, RM_B35), (RM_A35, RM_B35)]
 # JS1_RM_A25 = graph_utils.Justus_square_1(RM_A25)
 # JS1_JS1_RM_A25 = graph_utils.Justus_square_1(JS1_RM_A25)
-COMPARISONS = [(RM_A25, RM_B25), (RM_A25, RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
+COMPARISONS = [(RM_A25, RM_25_related_degree_seq), (RM_A25, RM_25_related_ER), (RM_A25, RM_B25), (RM_A25, RM_A25)] #, (JS1_JS1_RM_A25, JS1_JS1_RM_A25)]
 # COMPARISONS = [(RM_E72_A35, RM_E72_A35), (RM_E72_B35, RM_E72_B35), (RM_E72_A35, RM_E72_B35)]
 
 # print(l_nodes_k_dim_WL_coloring(RM_A25, 3, 1))
