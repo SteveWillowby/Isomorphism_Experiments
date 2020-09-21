@@ -31,8 +31,8 @@ def get_S_overlap_samples(S, G1, G2):
         values[val] += 1
     return values
 
-def overlap_comparison(G1, G2):
-    print("Running overlap comparison...")
+def overlap_comparison_01(G1, G2):
+    print("Running overlap comparison 01...")
     G1 = zero_indexed_graph(G1)
     G2 = zero_indexed_graph(G2)
 
@@ -76,7 +76,7 @@ def overlap_comparison(G1, G2):
         total_sameness *= p_bound
     
     print("Total Sameness: %f" % total_sameness)
-    return True
+    return not (best_suggestion_they_are_different >= 0.99)
 
     """
     # Representing each total count for overlap O independently as produced by
@@ -131,6 +131,49 @@ def overlap_comparison(G1, G2):
     return total_p_thing >= 0.5
     """
 
+def overlap_comparison_02(G1, G2):
+    print("Running overlap comparison 02...")
+    G1 = zero_indexed_graph(G1)
+    G2 = zero_indexed_graph(G2)
+
+    G1_nodes = list(G1.nodes())
+    G2_nodes = list(G2.nodes())
+    if len(G1_nodes) != len(G2_nodes):
+        return False
+    if len(G1.edges()) != len(G2.edges()):
+        return False
+
+    total_trials = len(G1_nodes)**3
+    trial_size = len(G1_nodes)**2
+
+    print("Taking %d trials of size 3 * %d for a total of %d samples." % \
+        (total_trials, trial_size, total_trials * 3 * trial_size))
+
+    same_count = 0
+    iso_count = 0
+    non_iso_count = 0
+    for trial in range(0, total_trials):
+        G1G1_ref_values =  get_S_overlap_samples(trial_size, G1, G1)
+        G1G1_comp_values = get_S_overlap_samples(trial_size, G1, G1)
+        G1G2_comp_values = get_S_overlap_samples(trial_size, G1, G2)
+
+        JSD_1111 = jensen_shannon_divergence_for_counts(G1G1_ref_values, \
+                                                        G1G1_comp_values)
+        JSD_1112 = jensen_shannon_divergence_for_counts(G1G1_ref_values, \
+                                                        G1G2_comp_values)
+        if JSD_1111 == JSD_1112:
+            same_count += 1
+        elif JSD_1111 > JSD_1112:
+            iso_count += 1
+        else:
+            non_iso_count += 1
+
+    print("      ISO count: %d" % iso_count)
+    print("  Non-ISO count: %d" % non_iso_count)
+    print("     Same count: %d" % same_count)
+
+    return non_iso_count / float(iso_count + non_iso_count) < 0.6
+
 # Input:
 #   S -- total number of samples taken
 #   c1 -- one count value
@@ -166,3 +209,45 @@ def prob_same_bound_favorable_to_saying_same(S, c1, c2):
     # print("%f vs expected pA: %f" % (pA, pA_test * pA_test_2))
     # print("%f vs expected pB: %f" % (pB, pB_test * pB_test_2))
     return max(pA, pB)
+
+# Note: Allows dicts with different total counts.
+def jensen_shannon_divergence_for_counts(count_dict_1, count_dict_2):
+
+    dict_1_total = sum([count for key, count in count_dict_1.items()])
+    dict_2_total = sum([count for key, count in count_dict_2.items()])
+
+    dict_1_probs = {key: count / float(dict_1_total) for \
+        key, count in count_dict_1.items()}
+    dict_2_probs = {key: count / float(dict_2_total) for \
+        key, count in count_dict_2.items()}
+
+    return jensen_shannon_divergence(dict_1_probs, dict_2_probs)
+
+def jensen_shannon_divergence(prob_dict_1, prob_dict_2):
+
+    all_keys = set([key for key, prob in prob_dict_1.items()] + \
+                   [key for key, prob in prob_dict_2.items()])
+
+    m_probs = {}
+    for key in all_keys:
+        p1 = 0.0
+        p2 = 0.0
+        if key in prob_dict_1:
+            p1 = prob_dict_1[key]
+            assert p1 <= 1.0
+        if key in prob_dict_2:
+            p2 = prob_dict_2[key]
+            assert p2 <= 1.0
+        m_probs[key] = (p1 + p2) / 2.0
+
+    JSD = 0.0
+    for key, p in prob_dict_1.items():
+        if p == 0.0:
+            continue
+        JSD += 0.5 * p * math.log(p / m_probs[key], 2.0)
+    for key, p in prob_dict_2.items():
+        if p == 0.0:
+            continue
+        JSD += 0.5 * p * math.log(p / m_probs[key], 2.0)
+
+    return JSD
