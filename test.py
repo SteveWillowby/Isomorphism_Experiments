@@ -15,7 +15,7 @@ import graph_utils
 import alg_utils
 import time
 from edge_xor_estimates import xor_estimate
-from random_bijections import overlap_comparison_01, overlap_comparison_02
+from random_bijections import overlap_comparison_01, overlap_comparison_02, overlap_comparison_03
 
 A1 = graph_from_srg_string(GRAPH_STRING_A1)
 A2 = graph_from_srg_string(GRAPH_STRING_A2)
@@ -174,7 +174,7 @@ for i in range(0, len(COMPARISONS)):
     #print("...")
     #predict_iso = c_desc_G == c_desc_G_prime
     print("Starting our prediction...")
-    predict_iso = overlap_comparison_02(G, G_prime)
+    predict_iso = overlap_comparison_03(G, G_prime)
 
     # predict_iso = k_dim_WL_test(G, G_prime, 2)
     print("Got prediction: %s" % predict_iso)

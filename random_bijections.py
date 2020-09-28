@@ -12,6 +12,7 @@ import numpy as np
 import math
 from graph_utils import zero_indexed_graph
 from matplotlib import pyplot as plt
+import bigfloat
 
 # Assumes G1 and G2 are zero-indexed and have the same number of nodes.
 def random_overlap_count(G1, G2):
@@ -143,8 +144,8 @@ def overlap_comparison_02(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    total_trials = len(G1_nodes)**3
-    trial_size = len(G1_nodes)**2
+    total_trials = len(G1_nodes)**0
+    trial_size = len(G1_nodes)**5
 
     print("Taking %d trials of size 3 * %d for a total of %d samples." % \
         (total_trials, trial_size, total_trials * 3 * trial_size))
@@ -161,6 +162,7 @@ def overlap_comparison_02(G1, G2):
                                                         G1G1_comp_values)
         JSD_1112 = jensen_shannon_divergence_for_counts(G1G1_ref_values, \
                                                         G1G2_comp_values)
+        print("%f vs %f" % (JSD_1111, JSD_1112))
         if JSD_1111 == JSD_1112:
             same_count += 1
         elif JSD_1111 > JSD_1112:
@@ -174,17 +176,137 @@ def overlap_comparison_02(G1, G2):
 
     return non_iso_count / float(iso_count + non_iso_count) < 0.6
 
+def overlap_comparison_03(G1, G2):
+    print("Running overlap comparison 03...")
+    G1 = zero_indexed_graph(G1)
+    G2 = zero_indexed_graph(G2)
+
+    G1_nodes = list(G1.nodes())
+    G2_nodes = list(G2.nodes())
+    if len(G1_nodes) != len(G2_nodes):
+        return False
+    if len(G1.edges()) != len(G2.edges()):
+        return False
+
+    num_measurements = len(G1.nodes())**4
+    print("Taking 2 * %d samples for a total of %d." % \
+        (num_measurements, 2*num_measurements))
+    G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
+    G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
+
+    bf_context = bigfloat.Context(precision=200)
+
+    big_bound = bigfloat.BigFloat(1.0, context=bf_context)
+
+    for o in range(0, len(G1.edges())):
+        C1 = float(G1G1_values[o])
+        C2 = float(G1G2_values[o])
+        S = float(num_measurements)
+        over_one_stack = []
+        under_one_stack = []
+        bound = 1.0
+        if C1 + C2 > 0.0:
+            print("C1: %d C2: %d S: %d" % (int(C1), int(C2), int(S)))
+        for i in range(int(C1), int(S)):
+            val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C1) / (i + 1))
+            if val > 1.0:
+                over_one_stack.append(val)
+            else:
+                under_one_stack.append(val)
+            bound *= val
+        for i in range(int(C2), int(S)):
+            val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C2) / (i + 1))
+            if val > 1.0:
+                over_one_stack.append(val)
+            else:
+                under_one_stack.append(val)
+            bound *= val
+        for i in range(0, int(C1)):
+            val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
+            if val > 1.0:
+                over_one_stack.append(val)
+            else:
+                under_one_stack.append(val)
+            bound *= val
+        for i in range(0, int(C2)):
+            val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
+            if val > 1.0:
+                over_one_stack.append(val)
+            else:
+                under_one_stack.append(val)
+            bound *= val
+        bound *= ((S + 1)**2)
+        bound = bound / (1.0 + bound)
+        if C1 + C2 > 0.0:
+            print("Bound for overlap of %d: %f" % (o, bound))
+
+        # Compute another way to minimize floating point error issues.
+        alt_bound = (S + 1)**2
+        over_one_stack_copy = list(over_one_stack)
+        under_one_stack_copy = list(under_one_stack)
+        while len(over_one_stack) > 0 or len(under_one_stack) > 0:
+            if len(over_one_stack) == 0:
+                alt_bound *= under_one_stack.pop()
+                continue
+            if len(under_one_stack) == 0:
+                alt_bound *= over_one_stack.pop()
+                continue
+            a = over_one_stack[-1]
+            b = under_one_stack[-1]
+            a_diff = abs(1000.0 - (alt_bound * a))
+            b_diff = abs(1000.0 - (alt_bound * b))
+            if a_diff < b_diff:
+                alt_bound *= over_one_stack.pop()
+            else:
+                alt_bound *= under_one_stack.pop()
+        if C1 + C2 > 0.0:
+            print("Alt-Bound for overlap of %d: %f (%f)" % (o, alt_bound / (1.0 + alt_bound), alt_bound))
+        alt_bound = alt_bound / (1.0 + alt_bound)
+
+        over_one_stack = over_one_stack_copy
+        under_one_stack = under_one_stack_copy
+
+        other_alt_bound = bigfloat.BigFloat((S + 1)**2, context=bf_context)
+        while len(over_one_stack) > 0 or len(under_one_stack) > 0:
+            if len(over_one_stack) == 0:
+                other_alt_bound *= under_one_stack.pop()
+                continue
+            if len(under_one_stack) == 0:
+                other_alt_bound *= over_one_stack.pop()
+                continue
+            a = over_one_stack[-1]
+            b = under_one_stack[-1]
+            a_diff = bigfloat.abs(1.0 - (other_alt_bound * a))
+            b_diff = bigfloat.abs(1.0 - (other_alt_bound * b))
+            if a_diff < b_diff:
+                other_alt_bound *= over_one_stack.pop()
+            else:
+                other_alt_bound *= under_one_stack.pop()
+        if C1 + C2 > 0.0:
+            print("Other-Alt-Bound for overlap of %d: %f (%f)" % (o, other_alt_bound / (1.0 + other_alt_bound), other_alt_bound))
+        other_alt_bound = other_alt_bound / (1.0 + other_alt_bound)
+
+        big_bound *= other_alt_bound
+        if big_bound < 0.0001:
+            print("Big bound < 0.0001. Returning False.")
+
+    print("Total big bound: %f" % big_bound)
+
+    result = big_bound >= 0.0001
+    print("Returning %s" % str(result))
+    return result
+
 # Input:
 #   S -- total number of samples taken
 #   c1 -- one count value
 #   c2 -- another count value
 #
 # Output:
-#   A probability p as favorable to saying the counts come from the same
-#       distribution, such that, in effect:
-#       Prob come from same distribution <= p
+#   A conditional probability p as favorable to saying the counts come from the
+#       same distribution, such that, in effect:
+#       Prob(get this result | come from same distribution) <= p
 #
-#   Thus if p is very low this can be used to suggest that the distributions
+#   Thus if p is very low this can be used to "suggest" that the distributions
 #       are different.
 def prob_same_bound_favorable_to_saying_same(S, c1, c2):
     cmax = max(c1, c2)
