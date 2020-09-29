@@ -194,6 +194,11 @@ def overlap_comparison_03(G1, G2):
     G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
     G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
 
+    S = float(num_measurements)
+
+    max_bits_needed_in_worst_code = \
+        int(math.ceil(2 * (S + 1) * math.log((S + 1), 2)))
+
     bf_context = bigfloat.Context(precision=200)
 
     big_bound = bigfloat.BigFloat(1.0, context=bf_context)
@@ -201,7 +206,6 @@ def overlap_comparison_03(G1, G2):
     for o in range(0, len(G1.edges())):
         C1 = float(G1G1_values[o])
         C2 = float(G1G2_values[o])
-        S = float(num_measurements)
         over_one_stack = []
         under_one_stack = []
         bound = 1.0
@@ -276,8 +280,10 @@ def overlap_comparison_03(G1, G2):
                 continue
             a = over_one_stack[-1]
             b = under_one_stack[-1]
-            a_diff = bigfloat.abs(1.0 - (other_alt_bound * a))
-            b_diff = bigfloat.abs(1.0 - (other_alt_bound * b))
+            v1 = float(other_alt_bound) * a
+            v2 = float(other_alt_bound) * b
+            a_diff = abs(1.0 - v1)
+            b_diff = abs(1.0 - v1)
             if a_diff < b_diff:
                 other_alt_bound *= over_one_stack.pop()
             else:
