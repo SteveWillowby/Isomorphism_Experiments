@@ -471,7 +471,7 @@ def bigfloat_choose(A, B, bf_context=None):
     A_choose_B = bigfloat.BigFloat(1.0, context=bf_context)
     B = min(B, A - B)
     for i in range(0, int(B)):
-        A_choose_B *= (A - (i + 1))
+        A_choose_B *= (A - i)
         A_choose_B /= (i + 1)
 
     return A_choose_B
@@ -505,15 +505,15 @@ if __name__ == "__main__":
 
     other_total = bigfloat.BigFloat(0.0)
 
-    sample_size = 10
+    sample_size = 100
     for i in range(0, sample_size + 1):
         for j in range(i, sample_size + 1):
             # print((i, j))
             bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
                 bf_context=bf_context)
 
-            # if bound != 0:
-            #     continue
+            if bound < 0.5:
+                continue
 
             prob = bigfloat_prob_of_count_given_p(i, p, sample_size, \
                 bf_context=bf_context)
