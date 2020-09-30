@@ -510,46 +510,56 @@ def bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=None):
 
 if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=400)
-    p1p1_total = bigfloat.BigFloat(0.0, context=bf_context)
-    p1p2_total = bigfloat.BigFloat(0.0, context=bf_context)
     two = bigfloat.BigFloat(2.0, context=bf_context)
 
-    p1 = bigfloat.BigFloat(1.0 / 3.0, context=bf_context)
-    offset = bigfloat.pow(2.0, -1.0, context=bf_context)
-    p2 = p1 + offset
+    probs = [0.0, 1.0 / 8.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 7.0 / 8.0, 1.0]
+    offsets = [0.75, -0.75, 0.5, -0.5, 0.125, -0.125, 1.0 / 256.0, -1.0 / 256, 1.0 / (2.0**30.0), -1.0 / (2.0**30.0)]
+    sample_sizes = [10, 100, 1000, 10000]
 
-    sample_size = 10
-    for i in range(0, sample_size + 1):
+    old_prob = None
+    for sample_size in sample_sizes:
+        for prob in probs:
+            for offset in offsets:
+                p1 = bigfloat.BigFloat(prob, context=bf_context)
+                p2 = p1 + bigfloat.BigFloat(offset, context=bf_context)
+                p1p1_total = bigfloat.BigFloat(0.0, context=bf_context)
+                p1p2_total = bigfloat.BigFloat(0.0, context=bf_context)
 
-        p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
-            bf_context=bf_context)
+                if p2 > 1.0 or p2 < 0.0:
+                    continue
 
-        for j in range(0, sample_size + 1):
-            # print((i, j))
-            bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
-                bf_context=bf_context)
+                for i in range(0, sample_size + 1):
 
-            other_bound = bigfloat_03_bound_estimate(C1=j, C2=i, S=sample_size, \
-                bf_context=bf_context)
+                    p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
+                        bf_context=bf_context)
 
-            assert bound == other_bound
+                    for j in range(0, sample_size + 1):
+                        # print((i, j))
+                        bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
+                            bf_context=bf_context)
 
-            p1_j_prob = bigfloat_prob_of_count_given_p(j, p1, sample_size, \
-                bf_context=bf_context)
+                        other_bound = bigfloat_03_bound_estimate(C1=j, C2=i, S=sample_size, \
+                            bf_context=bf_context)
 
-            p2_j_prob = bigfloat_prob_of_count_given_p(j, p2, sample_size, \
-                bf_context=bf_context)
+                        assert bound == other_bound
 
-            if 0.5 <= bound:
+                        p1_j_prob = bigfloat_prob_of_count_given_p(j, p1, sample_size, \
+                            bf_context=bf_context)
 
-                p1p1_total += p1_i_prob * p1_j_prob
+                        p2_j_prob = bigfloat_prob_of_count_given_p(j, p2, sample_size, \
+                            bf_context=bf_context)
 
-            if (p1_j_prob / p2_j_prob) <= bound:
+                        if 0.5 <= bound:
 
-                p1p2_total += p1_i_prob * p2_j_prob
+                            p1p1_total += p1_i_prob * p1_j_prob
 
-        print(float(i) / sample_size)
+                        if (p1_j_prob / p2_j_prob) <= bound:
 
-    print("P1P1 Total where S = %d, p1 = %f: %s" % (sample_size, float(p1), str(p1p1_total)))
+                            p1p2_total += p1_i_prob * p2_j_prob
 
-    print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % (sample_size, float(p1), float(offset), str(p1p2_total)))
+                if old_prob is None or old_prob != prob:
+                    print("------------------------")
+                    print("P1P1 Total where S = %d, p1 = %f: %s" % (sample_size, float(p1), str(p1p1_total)))
+                    old_prob = prob
+
+                print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % (sample_size, float(p1), float(offset), str(p1p2_total)))
