@@ -515,15 +515,24 @@ if __name__ == "__main__":
     two = bigfloat.BigFloat(2.0, context=bf_context)
 
     p1 = bigfloat.BigFloat(1.0 / 3.0, context=bf_context)
-    offset = -bigfloat.pow(2.0, -3.0, context=bf_context)
+    offset = bigfloat.pow(2.0, -1.0, context=bf_context)
     p2 = p1 + offset
 
     sample_size = 10
     for i in range(0, sample_size + 1):
+
+        p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
+            bf_context=bf_context)
+
         for j in range(0, sample_size + 1):
             # print((i, j))
             bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
                 bf_context=bf_context)
+
+            other_bound = bigfloat_03_bound_estimate(C1=j, C2=i, S=sample_size, \
+                bf_context=bf_context)
+
+            assert bound == other_bound
 
             p1_j_prob = bigfloat_prob_of_count_given_p(j, p1, sample_size, \
                 bf_context=bf_context)
@@ -533,11 +542,7 @@ if __name__ == "__main__":
 
             if 0.5 <= bound:
 
-                p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
-                    bf_context=bf_context)
-
                 p1p1_total += p1_i_prob * p1_j_prob
-
 
             if (p1_j_prob / p2_j_prob) <= bound:
 
