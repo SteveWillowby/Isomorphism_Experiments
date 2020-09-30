@@ -188,9 +188,10 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    num_measurements = len(G1.nodes())**4
-    print("Taking 2 * %d samples for a total of %d." % \
-        (num_measurements, 2*num_measurements))
+    exponent = 4
+    num_measurements = len(G1.nodes())**exponent
+    print("Taking 2 * V^%d = %d total samples."  % \
+        (exponent, 2*num_measurements))
     G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
     G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
 
@@ -199,102 +200,102 @@ def overlap_comparison_03(G1, G2):
     max_bits_needed_in_worst_code = \
         int(math.ceil(2 * (S + 1) * math.log((S + 1), 2)))
 
-    bf_context = bigfloat.Context(precision=200)
+    bf_context = bigfloat.Context(precision=max_bits_needed_in_worst_code)
 
     big_bound = bigfloat.BigFloat(1.0, context=bf_context)
+
+    saved_results = {}
 
     for o in range(0, len(G1.edges())):
         C1 = float(G1G1_values[o])
         C2 = float(G1G2_values[o])
-        over_one_stack = []
-        under_one_stack = []
-        bound = 1.0
-        if C1 + C2 > 0.0:
-            print("C1: %d C2: %d S: %d" % (int(C1), int(C2), int(S)))
-        for i in range(int(C1), int(S)):
-            val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C1) / (i + 1))
-            if val > 1.0:
-                over_one_stack.append(val)
-            else:
-                under_one_stack.append(val)
-            bound *= val
-        for i in range(int(C2), int(S)):
-            val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C2) / (i + 1))
-            if val > 1.0:
-                over_one_stack.append(val)
-            else:
-                under_one_stack.append(val)
-            bound *= val
-        for i in range(0, int(C1)):
-            val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
-            if val > 1.0:
-                over_one_stack.append(val)
-            else:
-                under_one_stack.append(val)
-            bound *= val
-        for i in range(0, int(C2)):
-            val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
-            if val > 1.0:
-                over_one_stack.append(val)
-            else:
-                under_one_stack.append(val)
-            bound *= val
-        bound *= ((S + 1)**2)
-        bound = bound / (1.0 + bound)
-        if C1 + C2 > 0.0:
-            print("Bound for overlap of %d: %f" % (o, bound))
 
-        # Compute another way to minimize floating point error issues.
-        alt_bound = (S + 1)**2
-        over_one_stack_copy = list(over_one_stack)
-        under_one_stack_copy = list(under_one_stack)
-        while len(over_one_stack) > 0 or len(under_one_stack) > 0:
-            if len(over_one_stack) == 0:
-                alt_bound *= under_one_stack.pop()
-                continue
-            if len(under_one_stack) == 0:
-                alt_bound *= over_one_stack.pop()
-                continue
-            a = over_one_stack[-1]
-            b = under_one_stack[-1]
-            a_diff = abs(1000.0 - (alt_bound * a))
-            b_diff = abs(1000.0 - (alt_bound * b))
-            if a_diff < b_diff:
-                alt_bound *= over_one_stack.pop()
-            else:
-                alt_bound *= under_one_stack.pop()
-        if C1 + C2 > 0.0:
-            print("Alt-Bound for overlap of %d: %f (%f)" % (o, alt_bound / (1.0 + alt_bound), alt_bound))
-        alt_bound = alt_bound / (1.0 + alt_bound)
+        if (C1, C2) in saved_results:
+            print("Using saved result.")
+            (bound, alt_bound, other_alt_bound) = saved_results[(C1, C2)]
+        elif (C2, C1) in saved_results:
+            print("Using saved result.")
+            (bound, alt_bound, other_alt_bound) = saved_results[(C2, C1)]
+        else:
+            print("Computing result...")
+            """
+            over_one_stack = []
+            under_one_stack = []
+            bound = 1.0
+            if C1 + C2 > 0.0:
+                print("C1: %d C2: %d S: %d" % (int(C1), int(C2), int(S)))
+            for i in range(int(C1), int(S)):
+                val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C1) / (i + 1))
+                if val > 1.0:
+                    over_one_stack.append(val)
+                else:
+                    under_one_stack.append(val)
+                bound *= val
+            for i in range(int(C2), int(S)):
+                val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C2) / (i + 1))
+                if val > 1.0:
+                    over_one_stack.append(val)
+                else:
+                    under_one_stack.append(val)
+                bound *= val
+            for i in range(0, int(C1)):
+                val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
+                if val > 1.0:
+                    over_one_stack.append(val)
+                else:
+                    under_one_stack.append(val)
+                bound *= val
+            for i in range(0, int(C2)):
+                val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
+                if val > 1.0:
+                    over_one_stack.append(val)
+                else:
+                    under_one_stack.append(val)
+                bound *= val
+            bound *= ((S + 1)**2)
+            bound = bound / (1.0 + bound)
+            if C1 + C2 > 0.0:
+                print("Bound for overlap of %d: %f" % (o, bound))
 
-        over_one_stack = over_one_stack_copy
-        under_one_stack = under_one_stack_copy
+            # Compute another way to minimize floating point error issues.
+            alt_bound = (S + 1)**2
+            while len(over_one_stack) > 0 or len(under_one_stack) > 0:
+                if len(over_one_stack) == 0:
+                    alt_bound *= under_one_stack.pop()
+                    continue
+                if len(under_one_stack) == 0:
+                    alt_bound *= over_one_stack.pop()
+                    continue
+                a = over_one_stack[-1]
+                b = under_one_stack[-1]
+                a_diff = abs(1000.0 - (alt_bound * a))
+                b_diff = abs(1000.0 - (alt_bound * b))
+                if a_diff < b_diff:
+                    alt_bound *= over_one_stack.pop()
+                else:
+                    alt_bound *= under_one_stack.pop()
+            if C1 + C2 > 0.0:
+                print("Alt-Bound for overlap of %d: %f (%f)" % (o, alt_bound / (1.0 + alt_bound), alt_bound))
+            alt_bound = alt_bound / (1.0 + alt_bound)
+            """    
 
-        other_alt_bound = bigfloat.BigFloat((S + 1)**2, context=bf_context)
-        while len(over_one_stack) > 0 or len(under_one_stack) > 0:
-            if len(over_one_stack) == 0:
-                other_alt_bound *= under_one_stack.pop()
-                continue
-            if len(under_one_stack) == 0:
-                other_alt_bound *= over_one_stack.pop()
-                continue
-            a = over_one_stack[-1]
-            b = under_one_stack[-1]
-            v1 = float(other_alt_bound) * a
-            v2 = float(other_alt_bound) * b
-            a_diff = abs(1.0 - v1)
-            b_diff = abs(1.0 - v1)
-            if a_diff < b_diff:
-                other_alt_bound *= over_one_stack.pop()
-            else:
-                other_alt_bound *= under_one_stack.pop()
-        if C1 + C2 > 0.0:
-            print("Other-Alt-Bound for overlap of %d: %f (%f)" % (o, other_alt_bound / (1.0 + other_alt_bound), other_alt_bound))
-        other_alt_bound = other_alt_bound / (1.0 + other_alt_bound)
+            other_alt_bound = bigfloat_03_bound_estimate(C1, C2, S, \
+                bf_context=bf_context)
+            print(other_alt_bound)
 
-        big_bound *= other_alt_bound
+            if C1 + C2 > 0.0:
+                print("Other-Alt-Bound for overlap of %d: %f (%f)" % (o, other_alt_bound, other_alt_bound / (1.0 - other_alt_bound)))
+
+            saved_results[(C1, C2)] = (0, 0, other_alt_bound)
+
+        # if float(other_alt_bound) != alt_bound:
+        #     print("^^ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+        if other_alt_bound < 0.5:
+            big_bound *= other_alt_bound
         if big_bound < 0.0001:
-            print("Big bound < 0.0001. Returning False.")
+            print("Big bound %s < 0.0001. Returning False." % (str(big_bound)))
+            return False
 
     print("Total big bound: %f" % big_bound)
 
@@ -330,12 +331,8 @@ def prob_same_bound_favorable_to_saying_same(S, c1, c2):
     pB = (S**2 * pmax**2 * (1.0 - pmax)**2) / ((cmin - S*pmax)**2 * (cmax - S*pmax)**2)
     pA_test = (S * pmin * (1.0 - pmin)) / (cmin - S*pmin)**2
     pB_test = (S * pmax * (1.0 - pmax)) / (cmax - S*pmax)**2
-    # print("%f vs pmin test: %f" % (1.0, pA_test))
-    # print("%f vs pmax test: %f" % (1.0, pB_test))
     pA_test_2 = (S * pmin * (1.0 - pmin)) / (cmax - S*pmin)**2
     pB_test_2 = (S * pmax * (1.0 - pmax)) / (cmin - S*pmax)**2
-    # print("%f vs expected pA: %f" % (pA, pA_test * pA_test_2))
-    # print("%f vs expected pB: %f" % (pB, pB_test * pB_test_2))
     return max(pA, pB)
 
 # Note: Allows dicts with different total counts.
@@ -379,3 +376,155 @@ def jensen_shannon_divergence(prob_dict_1, prob_dict_2):
         JSD += 0.5 * p * math.log(p / m_probs[key], 2.0)
 
     return JSD
+
+def bigfloat_03_bound_estimate(C1, C2, S, bf_context=None):
+    if bf_context is None:
+        bf_context = bigfloat.Context(precision=300)
+
+    if True:
+        C1_C2 = bigfloat.BigFloat(C1 + C2, context=bf_context)
+        S2x = bigfloat.BigFloat(2 * S, context=bf_context)
+        p = C1_C2 / S2x
+
+        # print("C1 C2 = (%f, %f)" % (C1, C2))
+        bound = bigfloat_prob_of_count_given_p(C1, p, S, bf_context=bf_context)
+        # print("Bound p1: %s" % bound)
+        bound *= bigfloat_prob_of_count_given_p(C2, p, S, bf_context=bf_context)
+        # print("Bound p2: %s" % bound)
+        bound *= bigfloat.BigFloat((S + 1)**2, context=bf_context)
+        # print("Bound p3: %s" % bound)
+
+        bound = bound / (1.0 + bound)
+        # print("Bound p4: %s" % bound)
+        assert float(bound) != float('nan')
+        return bound
+
+    if vals_under is None:
+        C1 = float(C1)
+        C2 = float(C2)
+        S = float(S)
+        vals_under = []
+        vals_over = []
+
+        C1_C2 = bigfloat.BigFloat(C1 + C2, context=bf_context)
+        S2x = bigfloat.BigFloat(2.0 * S, context=bf_context)
+        f1 = C1_C2 / S2x
+        f2 = 1.0 - f1
+
+        for i in range(int(C1), int(S)):
+            val = f2 / \
+                (bigfloat.BigFloat((i + 1) - C1, context=bf_context) / (i + 1))
+            if val > 1.0:
+                vals_over.append(val)
+            else:
+                vals_under.append(val)
+        for i in range(int(C2), int(S)):
+            val = f2 / \
+                (bigfloat.BigFloat((i + 1) - C2, context=bf_context) / (i + 1))
+            if val > 1.0:
+                vals_over.append(val)
+            else:
+                vals_under.append(val)
+        for i in range(0, int(C1)):
+            val = f1  # / ((i + 1) / (i + 1))
+            if val > 1.0:
+                vals_over.append(val)
+            else:
+                vals_under.append(val)
+        for i in range(0, int(C2)):
+            val = f1  # / ((i + 1) / (i + 1))
+            if val > 1.0:
+                vals_over.append(val)
+            else:
+                vals_under.append(val)
+
+    bound = bigfloat.BigFloat((S + 1)**2, context=bf_context)
+
+    while len(vals_over) > 0 or len(vals_under) > 0:
+        if len(vals_over) == 0:
+            assert vals_under[-1] > 0.0
+            bound *= vals_under.pop()
+            continue
+        if len(vals_under) == 0:
+            assert vals_over[-1] > 0.0
+            bound *= vals_over.pop()
+            continue
+        a = vals_over[-1]
+        b = vals_under[-1]
+        v1 = float(bound) * a
+        v2 = float(bound) * b
+        assert a > 0.0
+        assert b > 0.0
+        a_diff = abs(1.0 - v1)
+        b_diff = abs(1.0 - v1)
+        if a_diff < b_diff:
+            bound *= vals_over.pop()
+        else:
+            bound *= vals_under.pop()
+    bound = bound / (1.0 + bound)
+    return bound
+
+def bigfloat_choose(A, B, bf_context=None):
+    if bf_context is None:
+        bf_context = bigfloat.Context(precision=200)
+
+    A_choose_B = bigfloat.BigFloat(1.0, context=bf_context)
+    B = min(B, A - B)
+    for i in range(0, int(B)):
+        A_choose_B *= (A - (i + 1))
+        A_choose_B /= (i + 1)
+
+    return A_choose_B
+
+def bigfloat_prob_of_count_given_p(C, p, S, bf_context=None):
+    assert float(p) <= 1.0
+    assert float(C) <= float(S)
+
+    if bf_context is None:
+        bf_context = bigfloat.Context(precision=200)
+
+    C = bigfloat.BigFloat(C, context=bf_context)
+    S = bigfloat.BigFloat(S, context=bf_context)
+    p = bigfloat.BigFloat(p, context=bf_context)
+
+    prob = bigfloat.pow(p, C)
+    prob *= bigfloat_choose(S, C, bf_context=bf_context)
+    prob *= bigfloat.pow(1.0 - p, S - C)
+    if float(prob) > 1.0:
+        print("Error! Got prob > 1.0 (%s) from params C = %s, p = %s, S = %s" % (float(prob), C, p, S))
+        assert float(prob) <= 1.0
+    return prob
+
+
+if __name__ == "__main__":
+    bf_context = bigfloat.Context(precision=400)
+    total = bigfloat.BigFloat(0.0, context=bf_context)
+    two = bigfloat.BigFloat(2.0, context=bf_context)
+
+    p = bigfloat.BigFloat(1.0 / 2.0, context=bf_context)
+
+    other_total = bigfloat.BigFloat(0.0)
+
+    sample_size = 10
+    for i in range(0, sample_size + 1):
+        for j in range(i, sample_size + 1):
+            # print((i, j))
+            bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
+                bf_context=bf_context)
+
+            # if bound != 0:
+            #     continue
+
+            prob = bigfloat_prob_of_count_given_p(i, p, sample_size, \
+                bf_context=bf_context)
+
+            prob *= bigfloat_prob_of_count_given_p(j, p, sample_size, \
+                bf_context=bf_context)
+
+            if i != j:
+                prob *= 2.0
+
+            total += prob
+        print(float(i + 1) / sample_size)
+
+    print("Total: %s" % str(total))
