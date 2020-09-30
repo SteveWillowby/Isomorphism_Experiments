@@ -198,7 +198,7 @@ def overlap_comparison_03(G1, G2):
     S = float(num_measurements)
 
     max_bits_needed_in_worst_code = \
-        int(math.ceil(2 * (S + 1) * math.log((S + 1), 2)))
+        int(math.ceil(4 * (S + 1) * math.log((S + 1), 2)))
 
     bf_context = bigfloat.Context(precision=max_bits_needed_in_worst_code)
 
@@ -212,94 +212,32 @@ def overlap_comparison_03(G1, G2):
 
         if (C1, C2) in saved_results:
             print("Using saved result.")
-            (bound, alt_bound, other_alt_bound) = saved_results[(C1, C2)]
+            bound = saved_results[(C1, C2)]
         elif (C2, C1) in saved_results:
             print("Using saved result.")
-            (bound, alt_bound, other_alt_bound) = saved_results[(C2, C1)]
+            bound = saved_results[(C2, C1)]
         else:
             print("Computing result...")
-            """
-            over_one_stack = []
-            under_one_stack = []
-            bound = 1.0
-            if C1 + C2 > 0.0:
-                print("C1: %d C2: %d S: %d" % (int(C1), int(C2), int(S)))
-            for i in range(int(C1), int(S)):
-                val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C1) / (i + 1))
-                if val > 1.0:
-                    over_one_stack.append(val)
-                else:
-                    under_one_stack.append(val)
-                bound *= val
-            for i in range(int(C2), int(S)):
-                val = (1.0 - ((C1 + C2) / (2 * S))) / (((i + 1) - C2) / (i + 1))
-                if val > 1.0:
-                    over_one_stack.append(val)
-                else:
-                    under_one_stack.append(val)
-                bound *= val
-            for i in range(0, int(C1)):
-                val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
-                if val > 1.0:
-                    over_one_stack.append(val)
-                else:
-                    under_one_stack.append(val)
-                bound *= val
-            for i in range(0, int(C2)):
-                val = ((C1 + C2) / (2 * S)) / ((i + 1) / (i + 1))
-                if val > 1.0:
-                    over_one_stack.append(val)
-                else:
-                    under_one_stack.append(val)
-                bound *= val
-            bound *= ((S + 1)**2)
-            bound = bound / (1.0 + bound)
-            if C1 + C2 > 0.0:
-                print("Bound for overlap of %d: %f" % (o, bound))
 
-            # Compute another way to minimize floating point error issues.
-            alt_bound = (S + 1)**2
-            while len(over_one_stack) > 0 or len(under_one_stack) > 0:
-                if len(over_one_stack) == 0:
-                    alt_bound *= under_one_stack.pop()
-                    continue
-                if len(under_one_stack) == 0:
-                    alt_bound *= over_one_stack.pop()
-                    continue
-                a = over_one_stack[-1]
-                b = under_one_stack[-1]
-                a_diff = abs(1000.0 - (alt_bound * a))
-                b_diff = abs(1000.0 - (alt_bound * b))
-                if a_diff < b_diff:
-                    alt_bound *= over_one_stack.pop()
-                else:
-                    alt_bound *= under_one_stack.pop()
-            if C1 + C2 > 0.0:
-                print("Alt-Bound for overlap of %d: %f (%f)" % (o, alt_bound / (1.0 + alt_bound), alt_bound))
-            alt_bound = alt_bound / (1.0 + alt_bound)
-            """    
-
-            other_alt_bound = bigfloat_03_bound_estimate(C1, C2, S, \
+            bound = bigfloat_03_bound_estimate(C1, C2, S, \
                 bf_context=bf_context)
-            print(other_alt_bound)
+
+            # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
             if C1 + C2 > 0.0:
-                print("Other-Alt-Bound for overlap of %d: %f (%f)" % (o, other_alt_bound, other_alt_bound / (1.0 - other_alt_bound)))
+                print("Bound for overlap of %d: %f (%f)" % (o, bound, bound / (1.0 - bound)))
 
-            saved_results[(C1, C2)] = (0, 0, other_alt_bound)
+            saved_results[(C1, C2)] = bound
 
-        # if float(other_alt_bound) != alt_bound:
-        #     print("^^ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-        if other_alt_bound < 0.5:
-            big_bound *= other_alt_bound
+        if bound < 0.5:
+            big_bound *= bound
         if big_bound < 0.0001:
-            print("Big bound %s < 0.0001. Returning False." % (str(big_bound)))
+            print("Big bound %s < 0.0001. Returning False." % (float(big_bound)))
             return False
 
-    print("Total big bound: %f" % big_bound)
+    print("Total big bound: %f" % float(big_bound))
 
-    result = big_bound >= 0.0001
+    result = bool(big_bound >= 0.0001)
     print("Returning %s" % str(result))
     return result
 
@@ -483,48 +421,130 @@ def bigfloat_prob_of_count_given_p(C, p, S, bf_context=None):
     if bf_context is None:
         bf_context = bigfloat.Context(precision=200)
 
+    zero = bigfloat.BigFloat(0.0, context=bf_context)
+    one = bigfloat.BigFloat(1.0, context=bf_context)
+
+    # Handle p == 0 and p == 1 with special cases due to pow issues.
+    if p == zero:
+        if int(C) == 0:
+            return one
+        else:
+            return zero
+    elif p == one:
+        if int(C) == int(S):
+            return one
+        else:
+            return zero
+
     C = bigfloat.BigFloat(C, context=bf_context)
     S = bigfloat.BigFloat(S, context=bf_context)
     p = bigfloat.BigFloat(p, context=bf_context)
 
     prob = bigfloat.pow(p, C)
+    # Check to see if the bigfloat ran out of resolution:
+    if zero == prob:
+        print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
+        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+
     prob *= bigfloat_choose(S, C, bf_context=bf_context)
+    # Check to see if the bigfloat ran out of resolution:
+    if bigfloat.is_inf(prob):
+        print("Not enough bigfloat bits for %d choose %d. Using slow method..." % (S, C))
+        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+
     prob *= bigfloat.pow(1.0 - p, S - C)
+    # Check to see if the bigfloat ran out of resolution:
+    if zero == prob:
+        print("Not enough bigfloat bits for pow(1.0 - %f, %d). Using slow method..." % (1.0 - p, S - C))
+        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+
     if float(prob) > 1.0:
-        print("Error! Got prob > 1.0 (%s) from params C = %s, p = %s, S = %s" % (float(prob), C, p, S))
+        print("Error! Got prob > 1.0 from params C = %f, p = %f, S = %f" % (C, p, S))
         assert float(prob) <= 1.0
     return prob
 
+def bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=None):
+    assert float(p) <= 1.0
+    assert float(C) <= float(S)
+
+    if bf_context is None:
+        bf_context = bigfloat.Context(precision=200)
+
+    C = bigfloat.BigFloat(C, context=bf_context)
+    S = bigfloat.BigFloat(S, context=bf_context)
+    p = bigfloat.BigFloat(p, context=bf_context)
+    p_not = 1.0 - p
+
+    C_min = bigfloat.min(C, S - C)
+    under_one_vals = [p for i in range(0, int(C))] + \
+                     [p_not for i in range(0, int(S) - int(C))]
+    over_one_vals = [(S - i) / (C_min - (i + 1)) for i in range(0, int(C_min))]
+
+    result = bigfloat.BigFloat(1.0, context=bf_context)
+
+    while len(over_one_vals) > 0 or len(under_one_vals) > 0:
+        if len(over_one_vals) == 0:
+            result *= under_one_vals.pop()
+            continue
+        if len(under_one_vals) == 0:
+            result *= over_one_vals.pop()
+            continue
+        a = over_one_vals[-1]
+        b = under_one_vals[-1]
+        v1 = float(result) * a
+        v2 = float(result) * b
+        assert a > 0.0
+        assert b > 0.0
+        a_diff = abs(1.0 - v1)
+        b_diff = abs(1.0 - v1)
+        if a_diff < b_diff:
+            result *= over_one_vals.pop()
+        else:
+            result *= under_one_vals.pop()
+
+    if float(result) > 1.0:
+        print("Error! Got prob > 1.0 from params C = %f, p = %f, S = %f" % (C, p, S))
+        assert float(result) <= 1.0
+
+    return result
 
 if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=400)
-    total = bigfloat.BigFloat(0.0, context=bf_context)
+    p1p1_total = bigfloat.BigFloat(0.0, context=bf_context)
+    p1p2_total = bigfloat.BigFloat(0.0, context=bf_context)
     two = bigfloat.BigFloat(2.0, context=bf_context)
 
-    p = bigfloat.BigFloat(1.0 / 2.0, context=bf_context)
+    p1 = bigfloat.BigFloat(1.0 / 3.0, context=bf_context)
+    offset = -bigfloat.pow(2.0, -3.0, context=bf_context)
+    p2 = p1 + offset
 
-    other_total = bigfloat.BigFloat(0.0)
-
-    sample_size = 100
+    sample_size = 10
     for i in range(0, sample_size + 1):
-        for j in range(i, sample_size + 1):
+        for j in range(0, sample_size + 1):
             # print((i, j))
             bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
                 bf_context=bf_context)
 
-            if bound < 0.5:
-                continue
-
-            prob = bigfloat_prob_of_count_given_p(i, p, sample_size, \
+            p1_j_prob = bigfloat_prob_of_count_given_p(j, p1, sample_size, \
                 bf_context=bf_context)
 
-            prob *= bigfloat_prob_of_count_given_p(j, p, sample_size, \
+            p2_j_prob = bigfloat_prob_of_count_given_p(j, p2, sample_size, \
                 bf_context=bf_context)
 
-            if i != j:
-                prob *= 2.0
+            if 0.5 <= bound:
 
-            total += prob
-        print(float(i + 1) / sample_size)
+                p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
+                    bf_context=bf_context)
 
-    print("Total: %s" % str(total))
+                p1p1_total += p1_i_prob * p1_j_prob
+
+
+            if (p1_j_prob / p2_j_prob) <= bound:
+
+                p1p2_total += p1_i_prob * p2_j_prob
+
+        print(float(i) / sample_size)
+
+    print("P1P1 Total where S = %d, p1 = %f: %s" % (sample_size, float(p1), str(p1p1_total)))
+
+    print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % (sample_size, float(p1), float(offset), str(p1p2_total)))
