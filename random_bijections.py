@@ -390,7 +390,7 @@ def bigfloat_fast_exact_pow(X, Y):
     vals = [bigfloat.pow(X, sign)]
     while exps[-1] < base:
         exps.append(2 * exps[-1])
-        vals.append(bigfloat.vals[-1] * bigfloat.vals[-1])
+        vals.append(vals[-1] * vals[-1])
     total_result = addendum
     total_exp = bigfloat.BigFloat(0.0)
     for i in range(0, len(exps)):
