@@ -192,17 +192,25 @@ def overlap_comparison_03(G1, G2):
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
-    G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
-    G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
 
     S = float(num_measurements)
 
     max_bits_needed_in_worst_code = \
-        int(math.ceil(4 * (S + 1) * math.log((S + 1), 2)))
+        int(math.ceil((S + 1) * math.log((S + 1), 2)))
 
-    bf_context = bigfloat.Context(precision=max_bits_needed_in_worst_code)
+    if max_bits_needed_in_worst_code > bigfloat.PRECISION_MAX:
+        print("Warning - want to use more bits than bigfloat limit of %d." % \
+            bigfloat.PRECISION_MAX)
+    bits = min(max_bits_needed_in_worst_code, bigfloat.PRECISION_MAX)
 
-    big_bound = bigfloat.BigFloat(1.0, context=bf_context)
+    bf_context = bigfloat.Context(precision=bits, \
+        emax=bits, emin=-bits)
+    bigfloat.setcontext(bf_context)
+
+    big_bound = bigfloat.BigFloat(1.0)
+
+    G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
+    G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
 
     saved_results = {}
 
@@ -219,13 +227,13 @@ def overlap_comparison_03(G1, G2):
         else:
             print("Computing result...")
 
-            bound = bigfloat_03_bound_estimate(C1, C2, S, \
-                bf_context=bf_context)
+            bound = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
             # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
             if C1 + C2 > 0.0:
-                print("Bound for overlap of %d: %f (%f)" % (o, bound, bound / (1.0 - bound)))
+                print("Bound for overlap of %d with C1 = %d, C2 = %d: %f (%f)" % \
+                    (o, C1, C2, bound, bound / (1.0 - bound)))
 
             saved_results[(C1, C2)] = bound
 
@@ -315,98 +323,89 @@ def jensen_shannon_divergence(prob_dict_1, prob_dict_2):
 
     return JSD
 
-def bigfloat_03_bound_estimate(C1, C2, S, bf_context=None):
-    if bf_context is None:
-        bf_context = bigfloat.Context(precision=300)
+def bigfloat_03_bound_estimate(C1, C2, S):
+    C1_C2 = bigfloat.BigFloat(C1 + C2)
+    S2x = bigfloat.BigFloat(2 * S)
+    p = C1_C2 / S2x
 
-    if True:
-        C1_C2 = bigfloat.BigFloat(C1 + C2, context=bf_context)
-        S2x = bigfloat.BigFloat(2 * S, context=bf_context)
-        p = C1_C2 / S2x
+    bound = bigfloat_prob_of_count_given_p(C1, p, S)
+    bound *= bigfloat_prob_of_count_given_p(C2, p, S)
+    bound *= bigfloat.BigFloat((S + 1)**2)
 
-        # print("C1 C2 = (%f, %f)" % (C1, C2))
-        bound = bigfloat_prob_of_count_given_p(C1, p, S, bf_context=bf_context)
-        # print("Bound p1: %s" % bound)
-        bound *= bigfloat_prob_of_count_given_p(C2, p, S, bf_context=bf_context)
-        # print("Bound p2: %s" % bound)
-        bound *= bigfloat.BigFloat((S + 1)**2, context=bf_context)
-        # print("Bound p3: %s" % bound)
-
-        bound = bound / (1.0 + bound)
-        # print("Bound p4: %s" % bound)
-        assert float(bound) != float('nan')
-        return bound
-
-    if vals_under is None:
-        C1 = float(C1)
-        C2 = float(C2)
-        S = float(S)
-        vals_under = []
-        vals_over = []
-
-        C1_C2 = bigfloat.BigFloat(C1 + C2, context=bf_context)
-        S2x = bigfloat.BigFloat(2.0 * S, context=bf_context)
-        f1 = C1_C2 / S2x
-        f2 = 1.0 - f1
-
-        for i in range(int(C1), int(S)):
-            val = f2 / \
-                (bigfloat.BigFloat((i + 1) - C1, context=bf_context) / (i + 1))
-            if val > 1.0:
-                vals_over.append(val)
-            else:
-                vals_under.append(val)
-        for i in range(int(C2), int(S)):
-            val = f2 / \
-                (bigfloat.BigFloat((i + 1) - C2, context=bf_context) / (i + 1))
-            if val > 1.0:
-                vals_over.append(val)
-            else:
-                vals_under.append(val)
-        for i in range(0, int(C1)):
-            val = f1  # / ((i + 1) / (i + 1))
-            if val > 1.0:
-                vals_over.append(val)
-            else:
-                vals_under.append(val)
-        for i in range(0, int(C2)):
-            val = f1  # / ((i + 1) / (i + 1))
-            if val > 1.0:
-                vals_over.append(val)
-            else:
-                vals_under.append(val)
-
-    bound = bigfloat.BigFloat((S + 1)**2, context=bf_context)
-
-    while len(vals_over) > 0 or len(vals_under) > 0:
-        if len(vals_over) == 0:
-            assert vals_under[-1] > 0.0
-            bound *= vals_under.pop()
-            continue
-        if len(vals_under) == 0:
-            assert vals_over[-1] > 0.0
-            bound *= vals_over.pop()
-            continue
-        a = vals_over[-1]
-        b = vals_under[-1]
-        v1 = float(bound) * a
-        v2 = float(bound) * b
-        assert a > 0.0
-        assert b > 0.0
-        a_diff = abs(1.0 - v1)
-        b_diff = abs(1.0 - v1)
-        if a_diff < b_diff:
-            bound *= vals_over.pop()
-        else:
-            bound *= vals_under.pop()
     bound = bound / (1.0 + bound)
+
+    assert float(bound) != float('nan')
     return bound
 
-def bigfloat_choose(A, B, bf_context=None):
-    if bf_context is None:
-        bf_context = bigfloat.Context(precision=200)
+def bigfloat_03_fast_bound_estimate(C1, C2, S):
+    C1_C2 = bigfloat.BigFloat(C1 + C2)
+    S2x = bigfloat.BigFloat(2 * S)
+    p = C1_C2 / S2x
 
-    A_choose_B = bigfloat.BigFloat(1.0, context=bf_context)
+    bound = bigfloat_fast_prob_of_count_given_p(C1, p, S)
+    bound *= bigfloat_fast_prob_of_count_given_p(C2, p, S)
+    bound *= bigfloat.BigFloat((S + 1)**2)
+
+    bound = bound / (1.0 + bound)
+
+    assert float(bound) != float('nan')
+    return bound
+
+def bigfloat_fast_choose_large(A, B):
+    return bigfloat_fast_factorial_large(A) / \
+        (bigfloat_fast_factorial_small(B) * \
+         bigfloat_fast_factorial_small(A - B))
+
+def bigfloat_fast_choose_small(A, B):
+    return bigfloat_fast_factorial_small(A) / \
+        (bigfloat_fast_factorial_large(B) * \
+         bigfloat_fast_factorial_large(A - B))
+
+def bigfloat_fast_choose(A, B):
+    return bigfloat_fast_factorial_small(A) / \
+        (bigfloat_fast_factorial_small(B) * \
+         bigfloat_fast_factorial_small(A - B))
+
+# Uses Stirling's Approximation
+def bigfloat_fast_factorial_large(X):
+    e = bigfloat.exp(1.0)
+    return e * bigfloat_fast_exact_pow(X, X + 0.5) * bigfloat_fast_exact_pow(e, -X)
+
+# Uses Stirling's Approximation
+def bigfloat_fast_factorial_small(X):
+    e = bigfloat.exp(1.0)
+    pi = bigfloat.const_pi()
+    result = bigfloat.sqrt(2.0 * pi) * bigfloat_fast_exact_pow(X, X + 0.5) * bigfloat_fast_exact_pow(e, -X)
+    return result
+
+def bigfloat_fast_exact_pow(X, Y):
+    sign = 1.0 - 2.0 * float(int(Y < 0.0))
+    Y = bigfloat.abs(Y)
+    base = bigfloat.floor(Y)
+    extra = Y - base
+    addendum = bigfloat.pow(X, sign * extra)
+    if base == 0.0:
+        return addendum
+    exps = [bigfloat.BigFloat(1)]
+    vals = [bigfloat.pow(X, sign)]
+    while exps[-1] < base:
+        exps.append(2 * exps[-1])
+        vals.append(bigfloat.vals[-1] * bigfloat.vals[-1])
+    total_result = addendum
+    total_exp = bigfloat.BigFloat(0.0)
+    for i in range(0, len(exps)):
+        idx = len(exps) - (i + 1)
+        exp = exps[idx]
+        if total_exp + exp <= base:
+            total_exp += exp
+            total_result = total_result * vals[idx]
+        if total_exp == base:
+            break
+    return total_result
+
+def bigfloat_choose(A, B):
+    A_choose_B = bigfloat.BigFloat(1.0)
+
     B = min(B, A - B)
     for i in range(0, int(B)):
         A_choose_B *= (A - i)
@@ -414,15 +413,12 @@ def bigfloat_choose(A, B, bf_context=None):
 
     return A_choose_B
 
-def bigfloat_prob_of_count_given_p(C, p, S, bf_context=None):
+def bigfloat_prob_of_count_given_p(C, p, S):
     assert float(p) <= 1.0
     assert float(C) <= float(S)
 
-    if bf_context is None:
-        bf_context = bigfloat.Context(precision=200)
-
-    zero = bigfloat.BigFloat(0.0, context=bf_context)
-    one = bigfloat.BigFloat(1.0, context=bf_context)
+    zero = bigfloat.BigFloat(0.0)
+    one = bigfloat.BigFloat(1.0)
 
     # Handle p == 0 and p == 1 with special cases due to pow issues.
     if p == zero:
@@ -436,43 +432,102 @@ def bigfloat_prob_of_count_given_p(C, p, S, bf_context=None):
         else:
             return zero
 
-    C = bigfloat.BigFloat(C, context=bf_context)
-    S = bigfloat.BigFloat(S, context=bf_context)
-    p = bigfloat.BigFloat(p, context=bf_context)
+    C = bigfloat.BigFloat(C)
+    S = bigfloat.BigFloat(S)
+    p = bigfloat.BigFloat(p)
 
     prob = bigfloat.pow(p, C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
-        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
-    prob *= bigfloat_choose(S, C, bf_context=bf_context)
+    prob *= bigfloat_choose(S, C)
     # Check to see if the bigfloat ran out of resolution:
     if bigfloat.is_inf(prob):
         print("Not enough bigfloat bits for %d choose %d. Using slow method..." % (S, C))
-        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+        print(prob.precision)
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
     prob *= bigfloat.pow(1.0 - p, S - C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(1.0 - %f, %d). Using slow method..." % (1.0 - p, S - C))
-        return bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=bf_context)
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
     if float(prob) > 1.0:
         print("Error! Got prob > 1.0 from params C = %f, p = %f, S = %f" % (C, p, S))
-        assert float(prob) <= 1.0
+    assert 0.0 <= float(prob) and float(prob) <= 1.0
+    assert float(prob) != float('inf') and float(prob) != float('-inf') and float(prob) != float('nan')
+
     return prob
 
-def bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=None):
+def bigfloat_fast_prob_of_count_given_p(C, p, S):
+    assert 0.0 <= p
+    assert p <= 1.0
+    assert float(C) <= float(S)
+
+    # if bf_context is None:
+    #     bf_context = bigfloat.Context(precision=200, emax=200, emin=-200)
+
+    zero = bigfloat.BigFloat(0.0)
+    one = bigfloat.BigFloat(1.0)
+
+    # Handle p == 0 and p == 1 with special cases due to pow issues.
+    if p == zero:
+        if int(C) == 0:
+            return one
+        else:
+            return zero
+    elif p == one:
+        if int(C) == int(S):
+            return one
+        else:
+            return zero
+
+    C = bigfloat.BigFloat(C)
+    S = bigfloat.BigFloat(S)
+    p = bigfloat.BigFloat(p)
+
+    prob = bigfloat_fast_exact_pow(p, C)
+    # Check to see if the bigfloat ran out of resolution:
+    if zero == prob:
+        print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
+
+    bf_fc = bigfloat_fast_choose(S, C)
+    assert bf_fc > 0
+    prob *= bigfloat_fast_choose(S, C)
+    # Check to see if the bigfloat ran out of resolution:
+    if bigfloat.is_inf(prob):
+        print("Not enough bigfloat bits for %d choose %d. Using slow method..." % (S, C))
+        print(prob.precision)
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
+
+    prob *= bigfloat_fast_exact_pow(1.0 - p, S - C)
+    # Check to see if the bigfloat ran out of resolution:
+    if zero == prob:
+        print("Not enough bigfloat bits for pow(1.0 - %f, %d). Using slow method..." % (1.0 - p, S - C))
+        return bigfloat_slow_prob_of_count_given_p(C, p, S)
+
+    if float(prob) > 1.0:
+        print("Error! Got prob > 1.0 from params C = %f, p = %f, S = %f" % (C, p, S))
+    assert 0.0 <= float(prob)
+    assert float(prob) <= 1.1  # NOTE! 1.1 rather than 1.0 to allow for some "slop" in the probs.
+    assert float(prob) != float('inf') and float(prob) != float('-inf') and float(prob) != float('nan')
+
+    return prob
+
+def bigfloat_slow_prob_of_count_given_p(C, p, S):
     assert float(p) <= 1.0
     assert float(C) <= float(S)
 
-    if bf_context is None:
-        bf_context = bigfloat.Context(precision=200)
+    # if bf_context is None:
+    #     bf_context = bigfloat.Context(precision=200, emax=200, emin=-200)
 
-    C = bigfloat.BigFloat(C, context=bf_context)
-    S = bigfloat.BigFloat(S, context=bf_context)
-    p = bigfloat.BigFloat(p, context=bf_context)
+    C = bigfloat.BigFloat(C)
+    S = bigfloat.BigFloat(S)
+    p = bigfloat.BigFloat(p)
     p_not = 1.0 - p
 
     C_min = bigfloat.min(C, S - C)
@@ -480,7 +535,7 @@ def bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=None):
                      [p_not for i in range(0, int(S) - int(C))]
     over_one_vals = [(S - i) / (C_min - (i + 1)) for i in range(0, int(C_min))]
 
-    result = bigfloat.BigFloat(1.0, context=bf_context)
+    result = bigfloat.BigFloat(1.0)
 
     while len(over_one_vals) > 0 or len(under_one_vals) > 0:
         if len(over_one_vals) == 0:
@@ -509,8 +564,12 @@ def bigfloat_slow_prob_of_count_given_p(C, p, S, bf_context=None):
     return result
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=400)
-    two = bigfloat.BigFloat(2.0, context=bf_context)
+    bf_context = bigfloat.Context(precision=1000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    two = bigfloat.BigFloat(2.0)
+    print(two.precision)
+    print(bigfloat.getcontext().emax)
+    print(bigfloat.getcontext().emin)
 
     probs = [0.0, 1.0 / 8.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 7.0 / 8.0, 1.0]
     offsets = [0.75, -0.75, 0.5, -0.5, 0.125, -0.125, 1.0 / 256.0, -1.0 / 256, 1.0 / (2.0**30.0), -1.0 / (2.0**30.0)]
@@ -518,48 +577,68 @@ if __name__ == "__main__":
 
     old_prob = None
     for sample_size in sample_sizes:
+
+        # First, compute all "half-probs" that would be used for bounds.
+        all_probs = set()
+        for i in range(0, sample_size + 1):
+            for j in range(i, sample_size + 1):
+                all_probs.add(bigfloat.BigFloat(i + j) / \
+                               bigfloat.BigFloat(2 * sample_size))
+
+        # Second, add the probs that will be used directly.
+        for prob in probs:
+            p1 = bigfloat.BigFloat(prob)
+            all_probs.add(p1)
+
+            for offset in offsets:
+                p2 = p1 + bigfloat.BigFloat(offset)
+                if p2 > 1.0 or p2 < 0.0:
+                    continue
+
+                all_probs.add(p2)
+
+        # Third, compute all conditional probs for values.
+        conditional_probs = {}
+        for prob in all_probs:
+            for value in range(0, sample_size + 1):
+                cp = bigfloat_prob_of_count_given_p(value, prob, sample_size)
+                conditional_probs[(prob, value)] = cp
+
+        # Fourth, actually get the bounds tests.
         for prob in probs:
             for offset in offsets:
-                p1 = bigfloat.BigFloat(prob, context=bf_context)
-                p2 = p1 + bigfloat.BigFloat(offset, context=bf_context)
-                p1p1_total = bigfloat.BigFloat(0.0, context=bf_context)
-                p1p2_total = bigfloat.BigFloat(0.0, context=bf_context)
+                p1 = bigfloat.BigFloat(prob)
+                p2 = p1 + bigfloat.BigFloat(offset)
+                p1p1_total = bigfloat.BigFloat(0.0)
+                p1p2_total = bigfloat.BigFloat(0.0)
 
                 if p2 > 1.0 or p2 < 0.0:
                     continue
 
-                for i in range(0, sample_size + 1):
+                for C1 in range(0, sample_size + 1):
+                    for C2 in range(0, sample_size + 1):
+                        mid_prob = bigfloat.BigFloat(C1 + C2) / \
+                            bigfloat.BigFloat(2 * sample_size)
 
-                    p1_i_prob = bigfloat_prob_of_count_given_p(i, p1, sample_size, \
-                        bf_context=bf_context)
+                        raw_bound = float((sample_size + 1)**2) * \
+                            conditional_probs[(mid_prob, C1)] * \
+                            conditional_probs[(mid_prob, C2)]
 
-                    for j in range(0, sample_size + 1):
-                        # print((i, j))
-                        bound = bigfloat_03_bound_estimate(C1=i, C2=j, S=sample_size, \
-                            bf_context=bf_context)
+                        if 1.0 <= raw_bound:
+                            p1p1_total += conditional_probs[(p1, C1)] * \
+                                          conditional_probs[(p1, C2)]
 
-                        other_bound = bigfloat_03_bound_estimate(C1=j, C2=i, S=sample_size, \
-                            bf_context=bf_context)
-
-                        assert bound == other_bound
-
-                        p1_j_prob = bigfloat_prob_of_count_given_p(j, p1, sample_size, \
-                            bf_context=bf_context)
-
-                        p2_j_prob = bigfloat_prob_of_count_given_p(j, p2, sample_size, \
-                            bf_context=bf_context)
-
-                        if 0.5 <= bound:
-
-                            p1p1_total += p1_i_prob * p1_j_prob
-
-                        if (p1_j_prob / p2_j_prob) <= bound:
-
-                            p1p2_total += p1_i_prob * p2_j_prob
+                        real_raw_bound = conditional_probs[(p1, C2)] / \
+                            conditional_probs[(p2, C2)]
+                        if real_raw_bound <= raw_bound:
+                            p1p2_total += conditional_probs[(p1, C1)] * \
+                                          conditional_probs[(p2, C2)]
 
                 if old_prob is None or old_prob != prob:
                     print("------------------------")
-                    print("P1P1 Total where S = %d, p1 = %f: %s" % (sample_size, float(p1), str(p1p1_total)))
+                    print("P1P1 Total where S = %d, p1 = %f: %s" % \
+                        (sample_size, float(p1), str(p1p1_total)[0:15] + "..." + str(p1p1_total)[-7:]))
                     old_prob = prob
 
-                print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % (sample_size, float(p1), float(offset), str(p1p2_total)))
+                print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % \
+                    (sample_size, float(p1), float(offset), str(p1p2_total)[0:15] + "..." + str(p1p2_total)[-7:]))
