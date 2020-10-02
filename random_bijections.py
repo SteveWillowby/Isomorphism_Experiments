@@ -79,58 +79,6 @@ def overlap_comparison_01(G1, G2):
     print("Total Sameness: %f" % total_sameness)
     return not (best_suggestion_they_are_different >= 0.99)
 
-    """
-    # Representing each total count for overlap O independently as produced by
-    #   a sum of indicator variables which equal 1 if the random overlap equals
-    #   O and 0 otherwise.
-
-    pessimistic_prob_estimates = \
-        [float(G1G1_values[i] + G1G2_values[i]) / (2.0 * num_measurements) for \
-            i in range(0, len(G1.edges()) + 1)]
-
-    pessimistic_expected_total_values = \
-        [float(G1G1_values[i] + G1G2_values[i]) / 2.0 \
-            for i in range(0, len(G1.edges()) + 1)]
-
-    pessimistic_indicator_variances = \
-        [pessimistic_prob_estimates[i] * (1.0 - pessimistic_prob_estimates[i]) \
-            for i in range(0, len(G1.edges()) + 1)]
-
-    pessimistic_total_sigmas = \
-        [math.sqrt(num_measurements * pessimistic_indicator_variances[i]) for \
-            i in range(0, len(G1.edges()) + 1)]
-
-    pessimistic_diffs_from_means = \
-        [abs(G1G1_values[i] - pessimistic_expected_total_values[i]) for \
-            i in range(0, len(G1.edges()) + 1)]
-
-    # Pr(|X - u| >= ko) <= 1/k^2
-    pessimistic_chebyschev_non_chances = \
-        [None for i in range(0, len(G1.edges()) + 1)]
-    for i in range(0, len(G1.edges()) + 1):
-        print("Overlap: %d" % i)
-        print("    Diff: %f" % pessimistic_diffs_from_means[i])
-        print("    Sigma: %f" % pessimistic_total_sigmas[i])
-
-        if pessimistic_diffs_from_means[i] == 0.0:
-            pessimistic_chebyschev_non_chances[i] = 1.0
-        else:
-            pessimistic_chebyschev_non_chances[i] = \
-                1.0 / ((pessimistic_diffs_from_means[i] / \
-                         pessimistic_total_sigmas[i])**2.0)
-
-        print("    %s" % str(pessimistic_chebyschev_non_chances[i]))
-
-    total_p_thing = 1.0
-    for i in range(0, len(G1.edges()) + 1):
-        c = min(pessimistic_chebyschev_non_chances[i], 1.0)
-        # print(c)
-        # if c < 0.01:
-        #     return False
-        total_p_thing *= c
-    print("Total p thing: %f" % total_p_thing)
-    return total_p_thing >= 0.5
-    """
 
 def overlap_comparison_02(G1, G2):
     print("Running overlap comparison 02...")
@@ -227,18 +175,17 @@ def overlap_comparison_03(G1, G2):
         else:
             print("Computing result...")
 
-            bound = bigfloat_03_fast_bound_estimate(C1, C2, S)
+            bound = bigfloat_03_bound_estimate(C1, C2, S)
 
             # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
             if C1 + C2 > 0.0:
-                print("Bound for overlap of %d with C1 = %d, C2 = %d: %f (%f)" % \
-                    (o, C1, C2, bound, bound / (1.0 - bound)))
+                print("Bound for overlap of %d with C1 = %d, C2 = %d: %f" % \
+                    (o, C1, C2, bound))
 
             saved_results[(C1, C2)] = bound
 
-        if bound < 0.5:
-            big_bound *= bound
+        big_bound *= bound
         if big_bound < 0.0001:
             print("Big bound %s < 0.0001. Returning False." % (float(big_bound)))
             return False
@@ -328,13 +275,26 @@ def bigfloat_03_bound_estimate(C1, C2, S):
     S2x = bigfloat.BigFloat(2 * S)
     p = C1_C2 / S2x
 
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound = bigfloat_prob_of_count_given_p(C1, p, S)
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound *= bigfloat_prob_of_count_given_p(C2, p, S)
-    bound *= bigfloat.BigFloat((S + 1)**2)
-
-    bound = bound / (1.0 + bound)
+    print("  Remainder of bound...")
+    bound *= 0.5  # Prior that prob(same) = 0.5
 
     assert float(bound) != float('nan')
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
+    # Y is our hypothesis for p(C1, C2).
+    Y = bigfloat.max((S + 1)**2.0 - 1, bigfloat.sqrt((S + 1) / bound))
+
+    bound = ((S + 1)**2 - 1) / Y + (Y - (S + 1)**2) * bound
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
     return bound
 
 def bigfloat_03_fast_bound_estimate(C1, C2, S):
@@ -342,13 +302,26 @@ def bigfloat_03_fast_bound_estimate(C1, C2, S):
     S2x = bigfloat.BigFloat(2 * S)
     p = C1_C2 / S2x
 
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound = bigfloat_fast_prob_of_count_given_p(C1, p, S)
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound *= bigfloat_fast_prob_of_count_given_p(C2, p, S)
-    bound *= bigfloat.BigFloat((S + 1)**2)
-
-    bound = bound / (1.0 + bound)
+    print("  Remainder of bound...")
+    bound *= 0.5  # Prior that prob(same) = 0.5
 
     assert float(bound) != float('nan')
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
+    # Y is our hypothesis for p(C1, C2).
+    Y = bigfloat.max((S + 1)**2.0, bigfloat.sqrt((S + 1) / bound))
+
+    bound = ((S + 1)**2 - 1) / Y + (Y - (S + 1)**2) * bound
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
     return bound
 
 def bigfloat_fast_choose_large(A, B):
@@ -362,6 +335,15 @@ def bigfloat_fast_choose_small(A, B):
          bigfloat_fast_factorial_large(A - B))
 
 def bigfloat_fast_choose(A, B):
+    A = bigfloat.BigFloat(A)
+    B = bigfloat.BigFloat(B)
+
+    pi = bigfloat.const_pi()
+    first_part = bigfloat.sqrt(A / (2.0 * pi * B * (A - B)))
+    second_part = bigfloat.pow(A / B, B)
+    third_part = bigfloat.pow(A / (A - B), A - B)
+    return first_part * second_part * third_part
+
     return bigfloat_fast_factorial_small(A) / \
         (bigfloat_fast_factorial_small(B) * \
          bigfloat_fast_factorial_small(A - B))
@@ -436,12 +418,14 @@ def bigfloat_prob_of_count_given_p(C, p, S):
     S = bigfloat.BigFloat(S)
     p = bigfloat.BigFloat(p)
 
+    print("    Computing %f^%d..." % (p, C))
     prob = bigfloat.pow(p, C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
+    print("    Computing %d choose %d..." % (S, C))
     prob *= bigfloat_choose(S, C)
     # Check to see if the bigfloat ran out of resolution:
     if bigfloat.is_inf(prob):
@@ -449,6 +433,7 @@ def bigfloat_prob_of_count_given_p(C, p, S):
         print(prob.precision)
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
+    print("    Computing %f^%d" % (1.0 - p, S - C))
     prob *= bigfloat.pow(1.0 - p, S - C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
@@ -466,9 +451,6 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
     assert 0.0 <= p
     assert p <= 1.0
     assert float(C) <= float(S)
-
-    # if bf_context is None:
-    #     bf_context = bigfloat.Context(precision=200, emax=200, emin=-200)
 
     zero = bigfloat.BigFloat(0.0)
     one = bigfloat.BigFloat(1.0)
@@ -489,21 +471,24 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
     S = bigfloat.BigFloat(S)
     p = bigfloat.BigFloat(p)
 
+    print("    Estimating %f^%d..." % (p, C))
     prob = bigfloat_fast_exact_pow(p, C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
+    print("    Estimating %d choose %d..." % (S, C))
     bf_fc = bigfloat_fast_choose(S, C)
     assert bf_fc > 0
-    prob *= bigfloat_fast_choose(S, C)
+    prob *= bf_fc
     # Check to see if the bigfloat ran out of resolution:
     if bigfloat.is_inf(prob):
         print("Not enough bigfloat bits for %d choose %d. Using slow method..." % (S, C))
         print(prob.precision)
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
+    print("    Estimating %f^%d..." % (1.0 - p, S - C))
     prob *= bigfloat_fast_exact_pow(1.0 - p, S - C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
