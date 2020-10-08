@@ -136,7 +136,7 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    exponent = 4
+    exponent = 5
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
@@ -155,7 +155,7 @@ def overlap_comparison_03(G1, G2):
         emax=bits, emin=-bits)
     bigfloat.setcontext(bf_context)
 
-    big_bound = bigfloat.BigFloat(1.0)
+    min_bound = bigfloat.BigFloat(1.0)
 
     G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
     G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
@@ -175,7 +175,8 @@ def overlap_comparison_03(G1, G2):
         else:
             print("Computing result...")
 
-            bound = bigfloat_03_bound_estimate(C1, C2, S)
+            bound = bigfloat_03_fast_bound_estimate(C1, C2, S)
+            # bound_B = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
             # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
@@ -185,14 +186,15 @@ def overlap_comparison_03(G1, G2):
 
             saved_results[(C1, C2)] = bound
 
-        big_bound *= bound
-        if big_bound < 0.0001:
-            print("Big bound %s < 0.0001. Returning False." % (float(big_bound)))
+        if bound < min_bound:
+            min_bound = bound
+        if bound < 0.0001:
+            print("Bound %s < 0.0001. Returning False." % (float(min_bound)))
             return False
 
-    print("Total big bound: %f" % float(big_bound))
+    print("Min bound: %f" % float(min_bound))
 
-    result = bool(big_bound >= 0.0001)
+    result = bool(min_bound >= 0.0001)
     print("Returning %s" % str(result))
     return result
 
@@ -287,10 +289,9 @@ def bigfloat_03_bound_estimate(C1, C2, S):
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
 
-    # Y is our hypothesis for p(C1, C2).
-    Y = bigfloat.max((S + 1)**2.0 - 1, bigfloat.sqrt((S + 1) / bound))
+    m = bigfloat.max((S + 1)**2.0, bigfloat.sqrt(((S + 1.0)**2.0 - 1.0) / bound))
 
-    bound = ((S + 1)**2 - 1) / Y + (Y - (S + 1)**2) * bound
+    bound = (((S + 1.0)**2.0 - 1.0) / m)
 
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
@@ -314,10 +315,9 @@ def bigfloat_03_fast_bound_estimate(C1, C2, S):
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
 
-    # Y is our hypothesis for p(C1, C2).
-    Y = bigfloat.max((S + 1)**2.0, bigfloat.sqrt((S + 1) / bound))
+    m = bigfloat.max((S + 1)**2.0, bigfloat.sqrt(((S + 1.0)**2.0 - 1.0) / bound))
 
-    bound = ((S + 1)**2 - 1) / Y + (Y - (S + 1)**2) * bound
+    bound = (((S + 1.0)**2.0 - 1.0) / m)
 
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
@@ -337,11 +337,15 @@ def bigfloat_fast_choose_small(A, B):
 def bigfloat_fast_choose(A, B):
     A = bigfloat.BigFloat(A)
     B = bigfloat.BigFloat(B)
+    if B == 0.0 or B == A:
+        return bigfloat.BigFloat(1.0)
+    if B == 1.0 or B == (A - 1.0):
+        return A
 
     pi = bigfloat.const_pi()
     first_part = bigfloat.sqrt(A / (2.0 * pi * B * (A - B)))
-    second_part = bigfloat.pow(A / B, B)
-    third_part = bigfloat.pow(A / (A - B), A - B)
+    second_part = bigfloat_fast_exact_pow(A / B, B)
+    third_part = bigfloat_fast_exact_pow(A / (A - B), A - B)
     return first_part * second_part * third_part
 
     return bigfloat_fast_factorial_small(A) / \
