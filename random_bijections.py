@@ -136,7 +136,7 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    exponent = 5
+    exponent = 2
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
@@ -175,7 +175,7 @@ def overlap_comparison_03(G1, G2):
         else:
             print("Computing result...")
 
-            bound = bigfloat_03_fast_bound_estimate(C1, C2, S)
+            bound = bigfloat_04_fast_bound_estimate(C1, C2, S)
             # bound_B = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
             # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
@@ -323,6 +323,77 @@ def bigfloat_03_fast_bound_estimate(C1, C2, S):
         return bigfloat.BigFloat(1.0)
 
     return bound
+
+def bigfloat_04_fast_bound_estimate(C1, C2, S):
+    C1_C2 = bigfloat.BigFloat(C1 + C2)
+    S2x = bigfloat.BigFloat(2 * S)
+    p = C1_C2 / S2x
+
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    bound = bigfloat_prob_of_count_given_p(C1, p, S)
+    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    bound *= bigfloat_prob_of_count_given_p(C2, p, S)
+    print("  Remainder of bound...")
+    bound *= 0.5  # Prior that prob(same) = 0.5
+
+    assert float(bound) != float('nan')
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
+    bound = bigfloat_04_fast_balancer(bound, S)
+
+    if bound >= 1.0:
+        return bigfloat.BigFloat(1.0)
+
+    return bound
+
+def bigfloat_04_fast_balancer(value, S, min_denom=bigfloat.BigFloat(0.00000000001), num_values_tried=bigfloat.BigFloat(1000)):
+    max_denom = value
+    if min_denom > max_denom:
+        temp = min_denom
+        min_denom = max_denom
+        max_denom = temp
+    increment = bigfloat.abs(value - min_denom) / num_values_tried
+    #print("Starting at value: %f" % max_denom)
+    #print("Decreasing to %f in increments of %f" % (min_denom, increment))
+    denom = min_denom
+    best_diff = None
+    best_balanced = None
+    while denom < max_denom:
+        #print("   %f" % denom)
+        prob_x_over_denom = bigfloat_prob_counts_over_threshold_at_least(denom, S)
+        diff = bigfloat.abs((1.0 - (value / denom)) - prob_x_over_denom)
+        if best_diff is None:
+            best_diff = diff
+            best_balanced = 1.0 - prob_x_over_denom
+        elif diff < best_diff:
+            best_diff = diff
+            best_balanced = 1.0 - prob_x_over_denom
+        else:
+            break
+        denom += increment
+    return best_balanced
+
+def bigfloat_prob_counts_over_threshold_at_least(threshold, S):
+    prob_single_count_over_t_at_least = \
+        bigfloat_prob_count_over_threshold_at_least_slow(threshold, S)
+    prob_both_counts_over_t_at_least = 1.0 - (1.0 - prob_single_count_over_t_at_least)**2.0
+    return prob_both_counts_over_t_at_least
+
+def bigfloat_prob_count_over_threshold_at_least_slow(threshold, S):
+    total = bigfloat.BigFloat(0.0)
+    C = 0
+    main_pow = bigfloat_fast_exact_pow(bigfloat.BigFloat(0.5), S)
+    assert main_pow > 0.0
+    prob = main_pow * bigfloat_fast_choose(S, C)
+    # TODO: Make this a binary search and then apply a bound formula.
+    while prob < threshold:
+        #print("                %d, %f" % (C, total))
+        total += prob
+        C += 1
+        prob = main_pow * bigfloat_fast_choose(S, C)
+    return 1.0 - (2.0 * total)
 
 def bigfloat_fast_choose_large(A, B):
     return bigfloat_fast_factorial_large(A) / \
