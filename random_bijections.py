@@ -136,7 +136,7 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    exponent = 2
+    exponent = 4
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
@@ -175,14 +175,14 @@ def overlap_comparison_03(G1, G2):
         else:
             print("Computing result...")
 
-            bound = bigfloat_04_fast_bound_estimate(C1, C2, S)
+            (bound, diagnostic) = bigfloat_04_fast_bound_estimate(C1, C2, S)
             # bound_B = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
             # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
             if C1 + C2 > 0.0:
-                print("Bound for overlap of %d with C1 = %d, C2 = %d: %f" % \
-                    (o, C1, C2, bound))
+                print("Bound for overlap of %d with C1 = %d, C2 = %d, diagnostic = %f: %f" % \
+                    (o, C1, C2, diagnostic, bound))
 
             saved_results[(C1, C2)] = bound
 
@@ -341,59 +341,79 @@ def bigfloat_04_fast_bound_estimate(C1, C2, S):
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
 
+    diagnostic_value = bound
     bound = bigfloat_04_fast_balancer(bound, S)
 
     if bound >= 1.0:
         return bigfloat.BigFloat(1.0)
 
-    return bound
+    return (bound, diagnostic_value)
 
-def bigfloat_04_fast_balancer(value, S, min_denom=bigfloat.BigFloat(0.00000000001), num_values_tried=bigfloat.BigFloat(1000)):
-    max_denom = value
-    if min_denom > max_denom:
-        temp = min_denom
-        min_denom = max_denom
-        max_denom = temp
-    increment = bigfloat.abs(value - min_denom) / num_values_tried
-    #print("Starting at value: %f" % max_denom)
-    #print("Decreasing to %f in increments of %f" % (min_denom, increment))
-    denom = min_denom
-    best_diff = None
-    best_balanced = None
-    while denom < max_denom:
-        #print("   %f" % denom)
-        prob_x_over_denom = bigfloat_prob_counts_over_threshold_at_least(denom, S)
-        diff = bigfloat.abs((1.0 - (value / denom)) - prob_x_over_denom)
-        if best_diff is None:
+hacky_array_for_speedy_code = []
+
+def bigfloat_04_fast_balancer(value, S):
+    upper = int(S / 2) + 1
+    lower = 0
+    mid = lower + int((upper - lower) / 2)
+
+    results = hacky_array_for_speedy_code
+    if len(results) < upper:
+        print("THIS SHOULD ONLY HAPPEN ONCE!")
+        while len(results) < upper:
+            results.append(None)
+
+    best_k = None
+    best_diff = None 
+    while lower + 1 < upper:
+        k = mid
+        if results[k] is None:
+            results[k] = bigfloat_04_fast_bound_pair(value, k, S)
+        (inner_bound_const, outer_bound) = results[k]
+        # print("For a value of %f, k of %d, we get: (%f, %f)" % (value, k, inner_bound, outer_bound))
+
+        inner_strength = 1.0 - (value * inner_bound_const)
+        outer_strength = outer_bound
+        diff = bigfloat.abs(inner_strength - outer_strength)
+
+        if diff == 0.0:
+            return value * inner_bound_const
+
+        if best_diff is None or diff < best_diff:
+            best_k = k
             best_diff = diff
-            best_balanced = 1.0 - prob_x_over_denom
-        elif diff < best_diff:
-            best_diff = diff
-            best_balanced = 1.0 - prob_x_over_denom
+
+        if inner_strength > outer_strength:
+            # Need to decrease k to make outer bound stronger.
+            upper = mid
         else:
-            break
-        denom += increment
-    return best_balanced
+            # Need to increase k to make inner bound stronger.
+            lower = mid
+        mid = lower + int((upper - lower) / 2)
+        
+    one = bigfloat.BigFloat(1.0)
+    print("      Best k = %d" % best_k)
+    (inner_bound_const, outer_bound) = results[best_k]
+    return bigfloat.max(bigfloat.min(one, value * inner_bound_const), 1.0 - outer_bound)
 
-def bigfloat_prob_counts_over_threshold_at_least(threshold, S):
-    prob_single_count_over_t_at_least = \
-        bigfloat_prob_count_over_threshold_at_least_slow(threshold, S)
-    prob_both_counts_over_t_at_least = 1.0 - (1.0 - prob_single_count_over_t_at_least)**2.0
-    return prob_both_counts_over_t_at_least
+def bigfloat_04_fast_bound_pair(value, k, S):
+    k = bigfloat.BigFloat(k)
+    e = bigfloat.exp(1.0)
+    pi = bigfloat.const_pi()
+    inner_bound_const = bigfloat.BigFloat(1.0)
+    inner_bound_const *= bigfloat.sqrt(2.0 * pi)
+    inner_bound_const *= e * e
+    inner_bound_const *= bigfloat_fast_exact_pow(0.5 * S, S)
+    inner_bound_const /= bigfloat_fast_exact_pow(k, k)
+    inner_bound_const /= bigfloat_fast_exact_pow(S - k, S - k)
+    inner_bound_const *= inner_bound_const
+    inner_bound_const = 1.0 / inner_bound_const
 
-def bigfloat_prob_count_over_threshold_at_least_slow(threshold, S):
-    total = bigfloat.BigFloat(0.0)
-    C = 0
-    main_pow = bigfloat_fast_exact_pow(bigfloat.BigFloat(0.5), S)
-    assert main_pow > 0.0
-    prob = main_pow * bigfloat_fast_choose(S, C)
-    # TODO: Make this a binary search and then apply a bound formula.
-    while prob < threshold:
-        #print("                %d, %f" % (C, total))
-        total += prob
-        C += 1
-        prob = main_pow * bigfloat_fast_choose(S, C)
-    return 1.0 - (2.0 * total)
+    outer_bound = bigfloat_fast_exact_pow(0.5 * (S / k), k)
+    outer_bound *= bigfloat_fast_exact_pow(0.5 / (1.0 - (k / S)), S - k)
+    outer_bound = 1.0 - (2.0 * outer_bound)
+    outer_bound *= outer_bound
+
+    return (inner_bound_const, outer_bound)
 
 def bigfloat_fast_choose_large(A, B):
     return bigfloat_fast_factorial_large(A) / \
@@ -436,6 +456,8 @@ def bigfloat_fast_factorial_small(X):
     return result
 
 def bigfloat_fast_exact_pow(X, Y):
+    if Y == 0.0:
+        return bigfloat.BigFloat(1.0)
     sign = 1.0 - 2.0 * float(int(Y < 0.0))
     Y = bigfloat.abs(Y)
     base = bigfloat.floor(Y)
