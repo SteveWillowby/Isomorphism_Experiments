@@ -136,7 +136,7 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    exponent = 4
+    exponent = 5
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
@@ -167,14 +167,10 @@ def overlap_comparison_03(G1, G2):
         C2 = float(G1G2_values[o])
 
         if (C1, C2) in saved_results:
-            print("Using saved result.")
             bound = saved_results[(C1, C2)]
         elif (C2, C1) in saved_results:
-            print("Using saved result.")
             bound = saved_results[(C2, C1)]
         else:
-            print("Computing result...")
-
             (bound, diagnostic) = bigfloat_04_fast_bound_estimate(C1, C2, S)
             # bound_B = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
@@ -303,11 +299,11 @@ def bigfloat_03_fast_bound_estimate(C1, C2, S):
     S2x = bigfloat.BigFloat(2 * S)
     p = C1_C2 / S2x
 
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound = bigfloat_fast_prob_of_count_given_p(C1, p, S)
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound *= bigfloat_fast_prob_of_count_given_p(C2, p, S)
-    print("  Remainder of bound...")
+    # print("  Remainder of bound...")
     bound *= 0.5  # Prior that prob(same) = 0.5
 
     assert float(bound) != float('nan')
@@ -329,11 +325,11 @@ def bigfloat_04_fast_bound_estimate(C1, C2, S):
     S2x = bigfloat.BigFloat(2 * S)
     p = C1_C2 / S2x
 
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound = bigfloat_prob_of_count_given_p(C1, p, S)
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound *= bigfloat_prob_of_count_given_p(C2, p, S)
-    print("  Remainder of bound...")
+    # print("  Remainder of bound...")
     bound *= 0.5  # Prior that prob(same) = 0.5
 
     assert float(bound) != float('nan')
