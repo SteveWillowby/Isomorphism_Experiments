@@ -326,9 +326,9 @@ def bigfloat_04_fast_bound_estimate(C1, C2, S):
     p = C1_C2 / S2x
 
     # print("  Computing prob of count %d given prob %f..." % (C1, p))
-    bound = bigfloat_prob_of_count_given_p(C1, p, S)
+    bound = bigfloat_fast_prob_of_count_given_p(C1, p, S)
     # print("  Computing prob of count %d given prob %f..." % (C1, p))
-    bound *= bigfloat_prob_of_count_given_p(C2, p, S)
+    bound *= bigfloat_fast_prob_of_count_given_p(C2, p, S)
     # print("  Remainder of bound...")
     bound *= 0.5  # Prior that prob(same) = 0.5
 
