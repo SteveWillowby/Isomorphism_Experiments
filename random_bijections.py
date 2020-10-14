@@ -1,13 +1,3 @@
-# Math:
-# Chebyschev's Inequality:
-#       Let X be an (integrable?) variable with expected value u and finite non-
-#       zero variance o^2. Then for any real number k > 0,
-#       Pr(|X - u| >= ko) <= 1/k^2
-#
-# Markov's Inequality:
-#       Let X be a non-negative random variable and a > 0, then,
-#       Pr(X >= a) <= E(X) / a
-
 import numpy as np
 import math
 from graph_utils import zero_indexed_graph
@@ -32,8 +22,8 @@ def get_S_overlap_samples(S, G1, G2):
         values[val] += 1
     return values
 
-def overlap_comparison_01(G1, G2):
-    print("Running overlap comparison 01...")
+def overlap_comparison_generic_bound(G1, G2):
+    print("Running overlap comparison with the generic bound...")
     G1 = zero_indexed_graph(G1)
     G2 = zero_indexed_graph(G2)
 
@@ -44,88 +34,63 @@ def overlap_comparison_01(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    num_measurements = (len(G1.nodes())**5) * 1
-    print("Target: %d" % num_measurements)
+    exponent = 4
+    num_measurements = len(G1.nodes())**exponent
+    print("Taking 2 * V^%d = %d total samples."  % \
+        (exponent, 2*num_measurements))
+
+    S = float(num_measurements)
+
+    max_bits_needed_in_worst_code = \
+        int(math.ceil((S + 1) * math.log((S + 1), 2)))
+
+    if max_bits_needed_in_worst_code > bigfloat.PRECISION_MAX:
+        print("Warning - want to use more bits than bigfloat limit of %d." % \
+            bigfloat.PRECISION_MAX)
+    bits = min(max_bits_needed_in_worst_code, bigfloat.PRECISION_MAX)
+
+    bf_context = bigfloat.Context(precision=bits, \
+        emax=bits, emin=-bits)
+    bigfloat.setcontext(bf_context)
+
+    min_bound = bigfloat.BigFloat(1.0)
+
     G1G1_values = get_S_overlap_samples(num_measurements, G1, G1)
     G1G2_values = get_S_overlap_samples(num_measurements, G1, G2)
 
-    fig, ax = plt.subplots()
-    G1G1_bars = ax.bar([i - 0.25 for i in range(0, len(G1.edges()) + 1)], \
-                       [G1G1_values[i] for i in range(0, len(G1.edges()) + 1)], \
-                       width=0.2, label='G1G1') 
-    G1G2_bars = ax.bar([i + 0.25 for i in range(0, len(G1.edges()) + 1)], \
-                       [G1G2_values[i] for i in range(0, len(G1.edges()) + 1)], \
-                       width=0.2, label='G1G2')
+    saved_results = {}
 
-    ax.set_ylabel('Occurrences')
-    ax.set_title('Overlap Histograms')
-    ax.legend()
+    for o in range(0, len(G1.edges())):
+        C1 = float(G1G1_values[o])
+        C2 = float(G1G2_values[o])
 
-    # plt.show()
-    plt.close()
-
-    best_suggestion_they_are_different = 0.0
-    total_sameness = 1.0
-    for i in range(0, len(G1.edges())):
-        p_bound = prob_same_bound_favorable_to_saying_same(\
-            num_measurements, G1G1_values[i], G1G2_values[i])
-        assert p_bound <= 1.0
-        if p_bound < 1.0:
-            print("%d: %f" % (i, p_bound))
-        if 1.0 - p_bound > best_suggestion_they_are_different:
-            best_suggestion_they_are_different = 1.0 - p_bound
-        total_sameness *= p_bound
-    
-    print("Total Sameness: %f" % total_sameness)
-    return not (best_suggestion_they_are_different >= 0.99)
-
-
-def overlap_comparison_02(G1, G2):
-    print("Running overlap comparison 02...")
-    G1 = zero_indexed_graph(G1)
-    G2 = zero_indexed_graph(G2)
-
-    G1_nodes = list(G1.nodes())
-    G2_nodes = list(G2.nodes())
-    if len(G1_nodes) != len(G2_nodes):
-        return False
-    if len(G1.edges()) != len(G2.edges()):
-        return False
-
-    total_trials = len(G1_nodes)**0
-    trial_size = len(G1_nodes)**5
-
-    print("Taking %d trials of size 3 * %d for a total of %d samples." % \
-        (total_trials, trial_size, total_trials * 3 * trial_size))
-
-    same_count = 0
-    iso_count = 0
-    non_iso_count = 0
-    for trial in range(0, total_trials):
-        G1G1_ref_values =  get_S_overlap_samples(trial_size, G1, G1)
-        G1G1_comp_values = get_S_overlap_samples(trial_size, G1, G1)
-        G1G2_comp_values = get_S_overlap_samples(trial_size, G1, G2)
-
-        JSD_1111 = jensen_shannon_divergence_for_counts(G1G1_ref_values, \
-                                                        G1G1_comp_values)
-        JSD_1112 = jensen_shannon_divergence_for_counts(G1G1_ref_values, \
-                                                        G1G2_comp_values)
-        print("%f vs %f" % (JSD_1111, JSD_1112))
-        if JSD_1111 == JSD_1112:
-            same_count += 1
-        elif JSD_1111 > JSD_1112:
-            iso_count += 1
+        if (C1, C2) in saved_results:
+            bound = saved_results[(C1, C2)]
+        elif (C2, C1) in saved_results:
+            bound = saved_results[(C2, C1)]
         else:
-            non_iso_count += 1
+            bound = bigfloat_03_fast_bound_estimate(C1, C2, S)
 
-    print("      ISO count: %d" % iso_count)
-    print("  Non-ISO count: %d" % non_iso_count)
-    print("     Same count: %d" % same_count)
+            if C1 + C2 > 0.0:
+                print("Bound for overlap of %d with C1 = %d, C2 = %d: %f" % \
+                    (o, C1, C2, bound))
 
-    return non_iso_count / float(iso_count + non_iso_count) < 0.6
+            saved_results[(C1, C2)] = bound
 
-def overlap_comparison_03(G1, G2):
-    print("Running overlap comparison 03...")
+        if bound < min_bound:
+            min_bound = bound
+        if bound < 0.0001:
+            print("Bound %s < 0.0001. Returning False." % (float(min_bound)))
+            return False
+
+    print("Min bound: %f" % float(min_bound))
+
+    result = bool(min_bound >= 0.0001)
+    print("Returning %s" % str(result))
+    return result
+
+def overlap_comparison_bayesian_bound(G1, G2):
+    print("Running overlap comparison with bayesian bound...")
     G1 = zero_indexed_graph(G1)
     G2 = zero_indexed_graph(G2)
 
@@ -136,7 +101,7 @@ def overlap_comparison_03(G1, G2):
     if len(G1.edges()) != len(G2.edges()):
         return False
 
-    exponent = 5
+    exponent = 4
     num_measurements = len(G1.nodes())**exponent
     print("Taking 2 * V^%d = %d total samples."  % \
         (exponent, 2*num_measurements))
@@ -172,9 +137,6 @@ def overlap_comparison_03(G1, G2):
             bound = saved_results[(C2, C1)]
         else:
             (bound, diagnostic) = bigfloat_04_fast_bound_estimate(C1, C2, S)
-            # bound_B = bigfloat_03_fast_bound_estimate(C1, C2, S)
-
-            # print("Bound for C1 = %d, C2 = %d: %f" % (int(C1), int(C2), float(other_alt_bound)))
 
             if C1 + C2 > 0.0:
                 print("Bound for overlap of %d with C1 = %d, C2 = %d, diagnostic = %f: %f" % \
@@ -193,38 +155,6 @@ def overlap_comparison_03(G1, G2):
     result = bool(min_bound >= 0.0001)
     print("Returning %s" % str(result))
     return result
-
-# Input:
-#   S -- total number of samples taken
-#   c1 -- one count value
-#   c2 -- another count value
-#
-# Output:
-#   A conditional probability p as favorable to saying the counts come from the
-#       same distribution, such that, in effect:
-#       Prob(get this result | come from same distribution) <= p
-#
-#   Thus if p is very low this can be used to "suggest" that the distributions
-#       are different.
-def prob_same_bound_favorable_to_saying_same(S, c1, c2):
-    cmax = max(c1, c2)
-    cmin = min(c1, c2)
-    pmin = (S*(1.0 + 2*cmin) + math.sqrt(S**2 * (1 + 2*cmin)**2 - 4*(S**2 + S) * cmin**2)) / \
-            (2*(S**2 + S))
-    pmax = (S*(1.0 + 2*cmax) - math.sqrt(S**2 * (1 + 2*cmax)**2 - 4*(S**2 + S) * cmax**2)) / \
-            (2*(S**2 + S))
-    # If bounds overlap, cannot do better than 1.0.
-    if pmin >= pmax:
-        return 1.0
-
-    # Assume best at one of the bounds, where one of the 2 k's equals 1.
-    pA = (S**2 * pmin**2 * (1.0 - pmin)**2) / ((cmin - S*pmin)**2 * (cmax - S*pmin)**2)
-    pB = (S**2 * pmax**2 * (1.0 - pmax)**2) / ((cmin - S*pmax)**2 * (cmax - S*pmax)**2)
-    pA_test = (S * pmin * (1.0 - pmin)) / (cmin - S*pmin)**2
-    pB_test = (S * pmax * (1.0 - pmax)) / (cmax - S*pmax)**2
-    pA_test_2 = (S * pmin * (1.0 - pmin)) / (cmax - S*pmin)**2
-    pB_test_2 = (S * pmax * (1.0 - pmax)) / (cmin - S*pmax)**2
-    return max(pA, pB)
 
 # Note: Allows dicts with different total counts.
 def jensen_shannon_divergence_for_counts(count_dict_1, count_dict_2):
@@ -335,7 +265,7 @@ def bigfloat_04_fast_bound_estimate(C1, C2, S):
     assert float(bound) != float('nan')
 
     if bound >= 1.0:
-        return bigfloat.BigFloat(1.0)
+        return (bigfloat.BigFloat(1.0), bound)
 
     diagnostic_value = bound
     bound = bigfloat_04_fast_balancer(bound, S)
@@ -401,6 +331,7 @@ def bigfloat_04_fast_bound_pair(value, k, S):
     inner_bound_const *= bigfloat_fast_exact_pow(0.5 * S, S)
     inner_bound_const /= bigfloat_fast_exact_pow(k, k)
     inner_bound_const /= bigfloat_fast_exact_pow(S - k, S - k)
+    inner_bound_const *= bigfloat.sqrt(S / (k * (S - k)))
     inner_bound_const *= inner_bound_const
     inner_bound_const = 1.0 / inner_bound_const
 
@@ -435,9 +366,35 @@ def bigfloat_fast_choose(A, B):
     third_part = bigfloat_fast_exact_pow(A / (A - B), A - B)
     return first_part * second_part * third_part
 
-    return bigfloat_fast_factorial_small(A) / \
-        (bigfloat_fast_factorial_small(B) * \
-         bigfloat_fast_factorial_small(A - B))
+def bigfloat_fast_choose_large(A, B):
+    A = bigfloat.BigFloat(A)
+    B = bigfloat.BigFloat(B)
+    if B == 0.0 or B == A:
+        return bigfloat.BigFloat(1.0)
+    if B == 1.0 or B == (A - 1.0):
+        return A
+
+    pi = bigfloat.const_pi()
+    e = bigfloat.exp(1.0)
+    first_part = bigfloat.sqrt(A / (B * (A - B))) * (e / (2.0 * pi))
+    second_part = bigfloat_fast_exact_pow(A / B, B)
+    third_part = bigfloat_fast_exact_pow(A / (A - B), A - B)
+    return first_part * second_part * third_part
+
+def bigfloat_fast_choose_small(A, B):
+    A = bigfloat.BigFloat(A)
+    B = bigfloat.BigFloat(B)
+    if B == 0.0 or B == A:
+        return bigfloat.BigFloat(1.0)
+    if B == 1.0 or B == (A - 1.0):
+        return A
+
+    pi = bigfloat.const_pi()
+    e = bigfloat.exp(1.0)
+    first_part = bigfloat.sqrt(2.0 * pi * A / (B * (A - B))) / (e * e)
+    second_part = bigfloat_fast_exact_pow(A / B, B)
+    third_part = bigfloat_fast_exact_pow(A / (A - B), A - B)
+    return first_part * second_part * third_part
 
 # Uses Stirling's Approximation
 def bigfloat_fast_factorial_large(X):
@@ -572,7 +529,7 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
     print("    Estimating %d choose %d..." % (S, C))
-    bf_fc = bigfloat_fast_choose(S, C)
+    bf_fc = bigfloat_fast_choose_large(S, C)
     assert bf_fc > 0
     prob *= bf_fc
     # Check to see if the bigfloat ran out of resolution:
@@ -599,9 +556,6 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
 def bigfloat_slow_prob_of_count_given_p(C, p, S):
     assert float(p) <= 1.0
     assert float(C) <= float(S)
-
-    # if bf_context is None:
-    #     bf_context = bigfloat.Context(precision=200, emax=200, emin=-200)
 
     C = bigfloat.BigFloat(C)
     S = bigfloat.BigFloat(S)
