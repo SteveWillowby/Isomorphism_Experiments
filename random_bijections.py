@@ -271,7 +271,7 @@ def bigfloat_04_fast_bound_estimate(C1, C2, S):
     bound = bigfloat_04_fast_balancer(bound, S)
 
     if bound >= 1.0:
-        return bigfloat.BigFloat(1.0)
+        return (bigfloat.BigFloat(1.0), diagnostic_value)
 
     return (bound, diagnostic_value)
 
