@@ -203,11 +203,11 @@ def bigfloat_03_bound_estimate(C1, C2, S):
     S2x = bigfloat.BigFloat(2 * S)
     p = C1_C2 / S2x
 
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound = bigfloat_prob_of_count_given_p(C1, p, S)
-    print("  Computing prob of count %d given prob %f..." % (C1, p))
+    # print("  Computing prob of count %d given prob %f..." % (C1, p))
     bound *= bigfloat_prob_of_count_given_p(C2, p, S)
-    print("  Remainder of bound...")
+    # print("  Remainder of bound...")
     bound *= 0.5  # Prior that prob(same) = 0.5
 
     assert float(bound) != float('nan')
@@ -468,14 +468,14 @@ def bigfloat_prob_of_count_given_p(C, p, S):
     S = bigfloat.BigFloat(S)
     p = bigfloat.BigFloat(p)
 
-    print("    Computing %f^%d..." % (p, C))
+    # print("    Computing %f^%d..." % (p, C))
     prob = bigfloat.pow(p, C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
-    print("    Computing %d choose %d..." % (S, C))
+    # print("    Computing %d choose %d..." % (S, C))
     prob *= bigfloat_choose(S, C)
     # Check to see if the bigfloat ran out of resolution:
     if bigfloat.is_inf(prob):
@@ -483,7 +483,7 @@ def bigfloat_prob_of_count_given_p(C, p, S):
         print(prob.precision)
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
-    print("    Computing %f^%d" % (1.0 - p, S - C))
+    # print("    Computing %f^%d" % (1.0 - p, S - C))
     prob *= bigfloat.pow(1.0 - p, S - C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
@@ -595,7 +595,7 @@ def bigfloat_slow_prob_of_count_given_p(C, p, S):
 
     return result
 
-if __name__ == "__main__":
+def test_A():
     bf_context = bigfloat.Context(precision=1000, emax=100000, emin=-100000)
     bigfloat.setcontext(bf_context)
     two = bigfloat.BigFloat(2.0)
@@ -674,3 +674,119 @@ if __name__ == "__main__":
 
                 print("P1P2 Total where S = %d, p1 = %f, p2 = p1 + %f: %s" % \
                     (sample_size, float(p1), float(offset), str(p1p2_total)[0:15] + "..." + str(p1p2_total)[-7:]))
+
+def test_sum_of_binomials():
+    bf_context = bigfloat.Context(precision=1020, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    S = 400
+    offset = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(8.0)
+
+    p1 = bigfloat.BigFloat(0.5)
+    p2 = p1 - offset
+    p3 = p1 + offset
+
+    probs_50_50 = [bigfloat_prob_of_count_given_p(i, p1, S) for i in range(0, S + 1)]
+    probs_offset = [1.0 * bigfloat_prob_of_count_given_p(i, p2, S) + \
+                    0.0 * bigfloat_prob_of_count_given_p(i, p3, S) for i in range(0, S + 1)]
+
+    x_axis = [i for i in range(0, S + 1)]
+    plt.scatter(x_axis, probs_50_50)
+    plt.scatter(x_axis, probs_offset)
+    plt.title("S = %d" % S)
+    plt.show()
+
+    plt.close()  # .clf()
+
+    sorted_probs_lists = [sorted(probs_50_50), sorted(probs_offset)]
+    cdf_pairs = [[], []]
+    for arr_idx in range(0, 2):
+        sorted_probs = sorted_probs_lists[arr_idx]
+        cdf = cdf_pairs[arr_idx]
+        total_here_or_less = bigfloat.BigFloat(0.0)
+        total_here_or_more = bigfloat.BigFloat(1.0)
+        for i in range(0, len(sorted_probs)):
+            if i == 0:
+                cdf.append((bigfloat.BigFloat(0.0), bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)))
+            elif sorted_probs[i] != sorted_probs[i - 1]:
+                cdf.append((sorted_probs[i - 1], total_here_or_less, total_here_or_more))
+                total_here_or_more = 1.0 - total_here_or_less
+
+            total_here_or_less += sorted_probs[i]
+
+        cdf.append((sorted_probs[-1], total_here_or_less, total_here_or_more))
+        cdf.append((bigfloat.BigFloat(1.0), bigfloat.BigFloat(1.0), bigfloat.BigFloat(0.0)))
+
+    cdf_50_50 = cdf_pairs[0]
+    cdf_offset = cdf_pairs[1]
+    x_axis_50_50 = [cdf_50_50[i][0] for i in range(0, len(cdf_50_50))]
+    y_axis_50_50 = [cdf_50_50[i][1] for i in range(0, len(cdf_50_50))]
+    x_axis_offset = [cdf_offset[i][0] for i in range(0, len(cdf_offset))]
+    y_axis_offset = [cdf_offset[i][1] for i in range(0, len(cdf_offset))]
+    plt.plot(x_axis_50_50, y_axis_50_50)
+    plt.plot(x_axis_offset, y_axis_offset)
+    plt.title("S = %d" % S)
+    plt.show()
+
+    # Now, check to find the highest p_thresh such that:
+    #   Forall p_t <= p_thres: P(P(x) >= p_t | 50-50) <= P(P(x) >= p_t | offset)
+    next_50_50_idx = 0
+    next_offset_idx = 0
+
+    highest_pthresh_geq = bigfloat.BigFloat(0.0)  # geq is for the inner inequality to be '>=' as in above comment
+
+    p_pt_50_50_geq = bigfloat.BigFloat(1.0)
+    p_pt_offset_geq = bigfloat.BigFloat(1.0)
+    pt_50_50_prev = bigfloat.BigFloat(0.0)
+    pt_offset_prev = bigfloat.BigFloat(0.0)
+
+    start_p_thresh = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(S * S)
+
+    while next_50_50_idx < len(cdf_50_50) and next_offset_idx < len(cdf_offset):
+        pt_50_50 = cdf_50_50[next_50_50_idx][0]
+        p_pt_50_50_gr = 1.0 - cdf_50_50[next_50_50_idx][1]
+        pt_offset = cdf_offset[next_offset_idx][0]
+        p_pt_offset_gr = 1.0 - cdf_offset[next_offset_idx][1]
+
+        pt_in_question = bigfloat.min(pt_50_50, pt_offset)
+
+        if pt_50_50 >= pt_offset and p_pt_50_50_geq > p_pt_offset_geq and highest_pthresh_geq > start_p_thresh:
+            print("First trailing false > %f with:" % start_p_thresh)
+            print("  pt_50_50 of        %s" % pt_50_50)
+            print("  pt_offset of       %s" % pt_offset)
+            print("  pt_50_50_prev of   %s" % pt_50_50_prev)
+            print("  pt_offset_prev of  %s" % pt_offset_prev)
+            print("  p_pt_50_50_geq of  %s" % p_pt_50_50_geq)
+            print("  p_pt_offset_geq of %s" % p_pt_offset_geq)
+            print("  p_pt_50_50_gr of   %s" % p_pt_50_50_gr)
+            print("  p_pt_offset_gr of  %s" % p_pt_offset_gr)
+            break
+            
+        highest_pthresh_geq = pt_in_question
+
+        if pt_50_50 == pt_offset:
+            print("A")
+            next_50_50_idx += 1
+            next_offset_idx += 1
+
+            pt_50_50_prev = pt_50_50
+            pt_offset_prev = pt_offset
+            p_pt_50_50_geq = p_pt_50_50_gr
+            p_pt_offset_geq = p_pt_offset_gr
+        elif pt_50_50 < pt_offset:
+            print("B")
+            next_50_50_idx += 1
+            pt_50_50_prev = pt_50_50
+            p_pt_50_50_geq = p_pt_50_50_gr
+        else:
+            print("C")
+            next_offset_idx += 1
+            pt_offset_prev = pt_offset
+            p_pt_offset_geq = p_pt_offset_gr
+
+
+    print("    The highest p_thresh we found such that:")
+    print("        Forall p_t <= p_thresh: P(P(x) >= p_t | 50-50) <= P(P(x) >= p_t | offset)")
+    print("    was p_thresh = %s" % highest_pthresh_geq)
+
+if __name__ == "__main__":
+    test_sum_of_binomials()
