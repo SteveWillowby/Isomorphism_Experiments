@@ -678,26 +678,32 @@ def test_A():
 def test_sum_of_binomials():
     bf_context = bigfloat.Context(precision=1020, emax=100000, emin=-100000)
     bigfloat.setcontext(bf_context)
-    S = 400
-    offset = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(8.0)
+    S = 200
 
-    p1 = bigfloat.BigFloat(0.5)
-    p2 = p1 - offset
-    p3 = p1 + offset
+    centered_offset = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(9.0)
 
-    probs_50_50 = [bigfloat_prob_of_count_given_p(i, p1, S) for i in range(0, S + 1)]
-    probs_offset = [1.0 * bigfloat_prob_of_count_given_p(i, p2, S) + \
-                    0.0 * bigfloat_prob_of_count_given_p(i, p3, S) for i in range(0, S + 1)]
+    offset_1 = bigfloat.BigFloat(1.0)  / bigfloat.BigFloat(10.0)
+    offset_2 = bigfloat.BigFloat(-1.0) / bigfloat.BigFloat(8.0)
+
+    p1 = 0.5 + centered_offset
+    p2 = 0.5 - centered_offset
+    p3 = 0.5 + offset_1
+    p4 = 0.5 + offset_2
+
+    probs_centered = [0.5 * bigfloat_prob_of_count_given_p(i, p1, S) + \
+                      0.5 * bigfloat_prob_of_count_given_p(i, p2, S) for i in range(0, S + 1)]
+    probs_offset = [0.5 * bigfloat_prob_of_count_given_p(i, p3, S) + \
+                    0.5 * bigfloat_prob_of_count_given_p(i, p4, S) for i in range(0, S + 1)]
 
     x_axis = [i for i in range(0, S + 1)]
-    plt.scatter(x_axis, probs_50_50)
+    plt.scatter(x_axis, probs_centered)
     plt.scatter(x_axis, probs_offset)
     plt.title("S = %d" % S)
     plt.show()
 
     plt.close()  # .clf()
 
-    sorted_probs_lists = [sorted(probs_50_50), sorted(probs_offset)]
+    sorted_probs_lists = [sorted(probs_centered), sorted(probs_offset)]
     cdf_pairs = [[], []]
     for arr_idx in range(0, 2):
         sorted_probs = sorted_probs_lists[arr_idx]
@@ -716,67 +722,67 @@ def test_sum_of_binomials():
         cdf.append((sorted_probs[-1], total_here_or_less, total_here_or_more))
         cdf.append((bigfloat.BigFloat(1.0), bigfloat.BigFloat(1.0), bigfloat.BigFloat(0.0)))
 
-    cdf_50_50 = cdf_pairs[0]
+    cdf_centered = cdf_pairs[0]
     cdf_offset = cdf_pairs[1]
-    x_axis_50_50 = [cdf_50_50[i][0] for i in range(0, len(cdf_50_50))]
-    y_axis_50_50 = [cdf_50_50[i][1] for i in range(0, len(cdf_50_50))]
+    x_axis_centered = [cdf_centered[i][0] for i in range(0, len(cdf_centered))]
+    y_axis_centered = [cdf_centered[i][1] for i in range(0, len(cdf_centered))]
     x_axis_offset = [cdf_offset[i][0] for i in range(0, len(cdf_offset))]
     y_axis_offset = [cdf_offset[i][1] for i in range(0, len(cdf_offset))]
-    plt.plot(x_axis_50_50, y_axis_50_50)
+    plt.plot(x_axis_centered, y_axis_centered)
     plt.plot(x_axis_offset, y_axis_offset)
     plt.title("S = %d" % S)
     plt.show()
 
     # Now, check to find the highest p_thresh such that:
     #   Forall p_t <= p_thres: P(P(x) >= p_t | 50-50) <= P(P(x) >= p_t | offset)
-    next_50_50_idx = 0
+    next_centered_idx = 0
     next_offset_idx = 0
 
     highest_pthresh_geq = bigfloat.BigFloat(0.0)  # geq is for the inner inequality to be '>=' as in above comment
 
-    p_pt_50_50_geq = bigfloat.BigFloat(1.0)
+    p_pt_centered_geq = bigfloat.BigFloat(1.0)
     p_pt_offset_geq = bigfloat.BigFloat(1.0)
-    pt_50_50_prev = bigfloat.BigFloat(0.0)
+    pt_centered_prev = bigfloat.BigFloat(0.0)
     pt_offset_prev = bigfloat.BigFloat(0.0)
 
     start_p_thresh = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(S * S)
 
-    while next_50_50_idx < len(cdf_50_50) and next_offset_idx < len(cdf_offset):
-        pt_50_50 = cdf_50_50[next_50_50_idx][0]
-        p_pt_50_50_gr = 1.0 - cdf_50_50[next_50_50_idx][1]
+    while next_centered_idx < len(cdf_centered) and next_offset_idx < len(cdf_offset):
+        pt_centered = cdf_centered[next_centered_idx][0]
+        p_pt_centered_gr = 1.0 - cdf_centered[next_centered_idx][1]
         pt_offset = cdf_offset[next_offset_idx][0]
         p_pt_offset_gr = 1.0 - cdf_offset[next_offset_idx][1]
 
-        pt_in_question = bigfloat.min(pt_50_50, pt_offset)
+        pt_in_question = bigfloat.min(pt_centered, pt_offset)
 
-        if pt_50_50 >= pt_offset and p_pt_50_50_geq > p_pt_offset_geq and highest_pthresh_geq > start_p_thresh:
+        if pt_centered >= pt_offset and p_pt_centered_geq > p_pt_offset_geq and highest_pthresh_geq > start_p_thresh:
             print("First trailing false > %f with:" % start_p_thresh)
-            print("  pt_50_50 of        %s" % pt_50_50)
+            print("  pt_centered of        %s" % pt_centered)
             print("  pt_offset of       %s" % pt_offset)
-            print("  pt_50_50_prev of   %s" % pt_50_50_prev)
+            print("  pt_centered_prev of   %s" % pt_centered_prev)
             print("  pt_offset_prev of  %s" % pt_offset_prev)
-            print("  p_pt_50_50_geq of  %s" % p_pt_50_50_geq)
+            print("  p_pt_centered_geq of  %s" % p_pt_centered_geq)
             print("  p_pt_offset_geq of %s" % p_pt_offset_geq)
-            print("  p_pt_50_50_gr of   %s" % p_pt_50_50_gr)
+            print("  p_pt_centered_gr of   %s" % p_pt_centered_gr)
             print("  p_pt_offset_gr of  %s" % p_pt_offset_gr)
             break
             
         highest_pthresh_geq = pt_in_question
 
-        if pt_50_50 == pt_offset:
+        if pt_centered == pt_offset:
             print("A")
-            next_50_50_idx += 1
+            next_centered_idx += 1
             next_offset_idx += 1
 
-            pt_50_50_prev = pt_50_50
+            pt_centered_prev = pt_centered
             pt_offset_prev = pt_offset
-            p_pt_50_50_geq = p_pt_50_50_gr
+            p_pt_centered_geq = p_pt_centered_gr
             p_pt_offset_geq = p_pt_offset_gr
-        elif pt_50_50 < pt_offset:
+        elif pt_centered < pt_offset:
             print("B")
-            next_50_50_idx += 1
-            pt_50_50_prev = pt_50_50
-            p_pt_50_50_geq = p_pt_50_50_gr
+            next_centered_idx += 1
+            pt_centered_prev = pt_centered
+            p_pt_centered_geq = p_pt_centered_gr
         else:
             print("C")
             next_offset_idx += 1
@@ -788,5 +794,114 @@ def test_sum_of_binomials():
     print("        Forall p_t <= p_thresh: P(P(x) >= p_t | 50-50) <= P(P(x) >= p_t | offset)")
     print("    was p_thresh = %s" % highest_pthresh_geq)
 
+def one_over_S_binomial_bound_test():
+    bf_context = bigfloat.Context(precision=1000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    S = 200
+
+    threshold = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2 * S)
+
+    print("Compare to confidence of %f" % (1.0 - (S - 1) * threshold))
+
+    fixed_second_p = bigfloat.BigFloat(0.4)
+
+    for p1 in [1.0, 0.9, 0.8, 0.7, 0.65, 0.6, 0.55, 0.5]:
+        p1 = bigfloat.BigFloat(p1)
+        # p2 = 1.0 - p1
+        p2 = fixed_second_p
+        lower_bound = bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, p1, p2, S)
+        print("Lower bound for threshold %f with probs %f, %f: %s" % (threshold, p1, p2, lower_bound))
+
+    p1_vals = []
+    bound_vals = []
+
+    fixed_second_p = 1.0 - fixed_second_p
+
+    num_vals = 1000
+
+    print("\nPercent done:\n")
+
+    for i in range(0, num_vals + 1):
+        p = bigfloat.BigFloat(i) / bigfloat.BigFloat(num_vals)
+        print("%s" % str(p * 100)[:5])
+        p1_vals.append(p)
+        bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms(threshold, p, fixed_second_p, S))
+
+
+    """
+    low = bigfloat.BigFloat(0.0)
+    high = bigfloat.BigFloat(0.5)
+    mid = (low + high) / 2.0
+    p1_vals.append(low)
+    # bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, low, 1.0 - low, S))
+    bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, low, fixed_second_p, S))
+    p1_vals.append(high)
+    # bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, high, 1.0 - high, S))
+    bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, high, fixed_second_p, S))
+    p1_vals.append(mid)
+    # bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, mid, 1.0 - mid, S))
+    bound_vals.append(bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, mid, fixed_second_p, S))
+
+    mid_score = bound_vals[-1]
+
+    min_gap = 0.00001
+    while high - low > min_gap:
+        print("Remaining Gap: %f" % ((high - low) - min_gap))
+        candidate_mid_low = (low + mid) / 2.0
+        candidate_mid_high = (mid + high) / 2.0
+        # score_mid_low = bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, candidate_mid_low, 1.0 - candidate_mid_low, S)
+        # score_mid_high = bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, candidate_mid_high, 1.0 - candidate_mid_high, S)
+        score_mid_low = bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, candidate_mid_low, fixed_second_p, S)
+        score_mid_high = bound_on_odds_at_least_threshold_with_shared_binoms_limited(threshold, candidate_mid_high, fixed_second_p, S)
+
+        p1_vals.append(candidate_mid_low)
+        bound_vals.append(score_mid_low)
+        p1_vals.append(candidate_mid_high)
+        bound_vals.append(score_mid_high)
+
+        if score_mid_low < mid_score and score_mid_high < mid_score:
+            print("Explosion!")
+        if score_mid_low < score_mid_high:
+            mid_score = score_mid_low
+            high = mid
+            mid = candidate_mid_low
+        else:
+            mid_score = score_mid_high
+            low = mid
+            mid = candidate_mid_high
+
+    print("And the winner is... %f" % mid)
+    print("   ...with a bound of %f" % mid_score)
+    """
+
+    paired = sorted([(p1_vals[i], bound_vals[i]) for i in range(0, len(p1_vals))])
+    p1_vals = [paired[i][0] for i in range(0, len(paired))]
+    bound_vals = [paired[i][1] for i in range(0, len(paired))]
+    plt.plot(p1_vals, bound_vals)
+    plt.show()
+
+def bound_on_odds_at_least_threshold_with_shared_binoms(thresh, p1, p2, S):
+    probs = [0.5 * bigfloat_prob_of_count_given_p(i, p1, S) + \
+             0.5 * bigfloat_prob_of_count_given_p(i, p2, S) for i in range(0, int(S) + 1)]
+    total = bigfloat.BigFloat(0.0)
+    for p in probs:
+        if p >= thresh:
+            total += p
+    return total
+
+def bound_on_odds_at_least_threshold_with_shared_binoms_limited(thresh, p1, p2, S):
+    probs_1 = [0.5 * bigfloat_prob_of_count_given_p(i, p1, S) for i in range(0, int(S) + 1)]
+    probs_2 = [0.5 * bigfloat_prob_of_count_given_p(i, p2, S) for i in range(0, int(S) + 1)]
+
+    half_thresh = thresh / 2.0
+    total = bigfloat.BigFloat(0.0)
+    for i in range(0, int(S) + 1):
+        prob_1 = probs_1[i]
+        prob_2 = probs_2[i]
+        if prob_1 >= thresh or prob_2 >= thresh or \
+            (prob_1 >= half_thresh and prob_2 >= half_thresh):
+            total += prob_1 + prob_2
+    return total
+
 if __name__ == "__main__":
-    test_sum_of_binomials()
+    one_over_S_binomial_bound_test()
