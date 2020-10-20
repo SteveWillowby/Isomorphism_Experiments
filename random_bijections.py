@@ -904,25 +904,52 @@ def bound_on_odds_at_least_threshold_with_shared_binoms_limited(thresh, p1, p2, 
     return total
 
 def single_binomial_test():
+    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+
     p1 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2.0)
     p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(3.0)
 
-    S = 100
+    S = 10
 
     thresholds = []
     p1_bounds = []
     p2_bounds = []
 
-    thresholds_to_try = 100
+    thresholds_to_try = 10
     for t_idx in range(0, thresholds_to_try):
+        print("##############")
         threshold = bigfloat.BigFloat(t_idx) / thresholds_to_try
-        
+        p1_bound = latest_and_greatest_binomial_outer_bound(threshold, p1, S)
+        p2_bound = latest_and_greatest_binomial_outer_bound(threshold, p2, S)
+        thresholds.append(threshold)
+        p1_bounds.append(p1_bound)
+        p2_bounds.append(p2_bound)
 
-def latest_and_greatest_bound(thresh, p, S):
-    pass
+    plt.plot(thresholds, p1_bounds)
+    plt.plot(thresholds, p2_bounds)
+    plt.show()
+
+def latest_and_greatest_binomial_outer_bound(thresh, p, S):
+    thresh = bigfloat.BigFloat(thresh)
+    p = bigfloat.BigFloat(p)
+    S = bigfloat.BigFloat(S)
+
+    fake_k = find_fake_k_for_thresh(thresh, p, S)
+
+    outer_bound = bigfloat_fast_exact_pow(p * (S / fake_k), fake_k)
+    outer_bound *= bigfloat_fast_exact_pow((1.0 - p) / (1.0 - (fake_k / S)), S - fake_k)
+    return 1.0 - 2.0 * outer_bound
+
+# Called "fake" because it may be a non-integer.
+def find_fake_k_for_thresh(thresh, p, S):
+    func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_fast_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
+    (k, _) = binary_min_finder(func, 0, S / 2.0)
+    return k
 
 # Assumes function is convex
 def binary_min_finder(func, low, high, tol=0.0001):
+    print("Low: %f, High: %f" % (low, high))
     low = bigfloat.BigFloat(low)
     high = bigfloat.BigFloat(high)
     mid = low + ((high - low) / 2.0)
@@ -931,19 +958,20 @@ def binary_min_finder(func, low, high, tol=0.0001):
     high_func = func(high)
     mid_func = func(mid)
 
-    assert low_func > mid_func or high_func > mid_func
+    low_func >= mid_func or high_func >= mid_func
 
     best_arg = mid
     best_func = mid_func
 
     while high - low > tol:
+        print("  Remaining: %f" % ((high - low) - tol))
         left_mid = low + ((mid - low) / 2.0)
         right_mid = mid + ((high - mid) / 2.0)
 
         left_mid_func = func(left_mid)
         right_mid_func = func(right_mid)
 
-        if left_mid_func < right_func and left_mid_func < best_func:
+        if left_mid_func < right_mid_func and left_mid_func < best_func:
             best_func = left_mid_func
             best_arg = left_mid
         elif right_mid_func < best_func:
@@ -971,4 +999,5 @@ def binary_min_finder(func, low, high, tol=0.0001):
     return (best_arg, best_func)
 
 if __name__ == "__main__":
-    one_over_S_binomial_bound_test()
+    # one_over_S_binomial_bound_test()
+    single_binomial_test()
