@@ -795,7 +795,7 @@ def test_sum_of_binomials():
     print("    was p_thresh = %s" % highest_pthresh_geq)
 
 def one_over_S_binomial_bound_test():
-    bf_context = bigfloat.Context(precision=1000, emax=100000, emin=-100000)
+    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
     bigfloat.setcontext(bf_context)
     S = 200
 
@@ -817,7 +817,7 @@ def one_over_S_binomial_bound_test():
 
     fixed_second_p = 1.0 - fixed_second_p
 
-    num_vals = 1000
+    num_vals = 10000
 
     print("\nPercent done:\n")
 
@@ -902,6 +902,73 @@ def bound_on_odds_at_least_threshold_with_shared_binoms_limited(thresh, p1, p2, 
             (prob_1 >= half_thresh and prob_2 >= half_thresh):
             total += prob_1 + prob_2
     return total
+
+def single_binomial_test():
+    p1 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2.0)
+    p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(3.0)
+
+    S = 100
+
+    thresholds = []
+    p1_bounds = []
+    p2_bounds = []
+
+    thresholds_to_try = 100
+    for t_idx in range(0, thresholds_to_try):
+        threshold = bigfloat.BigFloat(t_idx) / thresholds_to_try
+        
+
+def latest_and_greatest_bound(thresh, p, S):
+    pass
+
+# Assumes function is convex
+def binary_min_finder(func, low, high, tol=0.0001):
+    low = bigfloat.BigFloat(low)
+    high = bigfloat.BigFloat(high)
+    mid = low + ((high - low) / 2.0)
+
+    low_func = func(low)
+    high_func = func(high)
+    mid_func = func(mid)
+
+    assert low_func > mid_func or high_func > mid_func
+
+    best_arg = mid
+    best_func = mid_func
+
+    while high - low > tol:
+        left_mid = low + ((mid - low) / 2.0)
+        right_mid = mid + ((high - mid) / 2.0)
+
+        left_mid_func = func(left_mid)
+        right_mid_func = func(right_mid)
+
+        if left_mid_func < right_func and left_mid_func < best_func:
+            best_func = left_mid_func
+            best_arg = left_mid
+        elif right_mid_func < best_func:
+            best_func = right_mid_func
+            best_arg = right_mid
+
+        if mid_func < left_mid_func and mid_func < right_mid_func:
+            high = right_mid
+            low = left_mid
+            high_func = right_mid_func
+            low_func = left_mid_func
+        elif mid_func < left_mid_func:
+            assert mid_func >= right_mid_func
+            low = mid
+            low_func = mid_func
+            mid = right_mid
+            mid_func = right_mid_func
+        else:
+            # assert mid_func >= left_mid_func
+            high = mid
+            high_func = mid_func
+            mid = left_mid
+            mid_func = right_mid_func
+
+    return (best_arg, best_func)
 
 if __name__ == "__main__":
     one_over_S_binomial_bound_test()
