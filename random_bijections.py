@@ -521,14 +521,14 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
     S = bigfloat.BigFloat(S)
     p = bigfloat.BigFloat(p)
 
-    print("    Estimating %f^%d..." % (p, C))
+    # print("    Estimating %f^%d..." % (p, C))
     prob = bigfloat_fast_exact_pow(p, C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
         print("Not enough bigfloat bits for pow(%f, %d). Using slow method..." % (p, C))
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
-    print("    Estimating %d choose %d..." % (S, C))
+    # print("    Estimating %d choose %d..." % (S, C))
     bf_fc = bigfloat_fast_choose_large(S, C)
     assert bf_fc > 0
     prob *= bf_fc
@@ -538,7 +538,7 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
         print(prob.precision)
         return bigfloat_slow_prob_of_count_given_p(C, p, S)
 
-    print("    Estimating %f^%d..." % (1.0 - p, S - C))
+    # print("    Estimating %f^%d..." % (1.0 - p, S - C))
     prob *= bigfloat_fast_exact_pow(1.0 - p, S - C)
     # Check to see if the bigfloat ran out of resolution:
     if zero == prob:
@@ -916,9 +916,8 @@ def single_binomial_test():
     p1_bounds = []
     p2_bounds = []
 
-    thresholds_to_try = 10
+    thresholds_to_try = 5000
     for t_idx in range(0, thresholds_to_try):
-        print("##############")
         threshold = bigfloat.BigFloat(t_idx) / thresholds_to_try
         p1_bound = latest_and_greatest_binomial_outer_bound(threshold, p1, S)
         p2_bound = latest_and_greatest_binomial_outer_bound(threshold, p2, S)
@@ -935,21 +934,24 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
     p = bigfloat.BigFloat(p)
     S = bigfloat.BigFloat(S)
 
-    fake_k = find_fake_k_for_thresh(thresh, p, S)
+    fake_k_A = find_fake_k_for_thresh(thresh, p, S)
+    fake_k_B = find_fake_k_for_thresh(thresh, 1.0 - p, S)
 
-    outer_bound = bigfloat_fast_exact_pow(p * (S / fake_k), fake_k)
-    outer_bound *= bigfloat_fast_exact_pow((1.0 - p) / (1.0 - (fake_k / S)), S - fake_k)
-    return 1.0 - 2.0 * outer_bound
+    outer_bound_A = bigfloat_fast_exact_pow(p * (S / fake_k_A), fake_k_A)
+    outer_bound_A *= bigfloat_fast_exact_pow((1.0 - p) / (1.0 - (fake_k_A / S)), S - fake_k_A)
+
+    outer_bound_B = bigfloat_fast_exact_pow((1.0 - p) * (S / fake_k_B), fake_k_B)
+    outer_bound_B *= bigfloat_fast_exact_pow(p / (1.0 - (fake_k_B / S)), S - fake_k_B)
+    return 1.0 - (outer_bound_A + outer_bound_B)
 
 # Called "fake" because it may be a non-integer.
 def find_fake_k_for_thresh(thresh, p, S):
     func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_fast_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
-    (k, _) = binary_min_finder(func, 0, S / 2.0)
+    (k, _) = binary_min_finder(func, 0, S * p)
     return k
 
 # Assumes function is convex
-def binary_min_finder(func, low, high, tol=0.0001):
-    print("Low: %f, High: %f" % (low, high))
+def binary_min_finder(func, low, high, tol=0.00000001):
     low = bigfloat.BigFloat(low)
     high = bigfloat.BigFloat(high)
     mid = low + ((high - low) / 2.0)
@@ -960,16 +962,21 @@ def binary_min_finder(func, low, high, tol=0.0001):
 
     low_func >= mid_func or high_func >= mid_func
 
+    val_func_pairs = [(low, low_func), (high, high_func), (mid, mid_func)]
+
     best_arg = mid
     best_func = mid_func
 
     while high - low > tol:
-        print("  Remaining: %f" % ((high - low) - tol))
+        # print("  Remaining: %f" % ((high - low) - tol))
         left_mid = low + ((mid - low) / 2.0)
         right_mid = mid + ((high - mid) / 2.0)
 
         left_mid_func = func(left_mid)
         right_mid_func = func(right_mid)
+
+        val_func_pairs.append((left_mid, left_mid_func))
+        val_func_pairs.append((right_mid, right_mid_func))
 
         if left_mid_func < right_mid_func and left_mid_func < best_func:
             best_func = left_mid_func
@@ -995,6 +1002,15 @@ def binary_min_finder(func, low, high, tol=0.0001):
             high_func = mid_func
             mid = left_mid
             mid_func = right_mid_func
+
+    """
+    val_func_pairs.sort()
+    x_axis = [a for (a, b) in val_func_pairs]
+    y_axis = [b for (a, b) in val_func_pairs]
+    plt.plot(x_axis, y_axis)
+    plt.title("Best of %f at %f" % (best_func, best_arg))
+    plt.show()
+    """
 
     return (best_arg, best_func)
 
