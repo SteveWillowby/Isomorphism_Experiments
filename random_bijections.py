@@ -342,16 +342,6 @@ def bigfloat_04_fast_bound_pair(value, k, S):
 
     return (inner_bound_const, outer_bound)
 
-def bigfloat_fast_choose_large(A, B):
-    return bigfloat_fast_factorial_large(A) / \
-        (bigfloat_fast_factorial_small(B) * \
-         bigfloat_fast_factorial_small(A - B))
-
-def bigfloat_fast_choose_small(A, B):
-    return bigfloat_fast_factorial_small(A) / \
-        (bigfloat_fast_factorial_large(B) * \
-         bigfloat_fast_factorial_large(A - B))
-
 def bigfloat_fast_choose(A, B):
     A = bigfloat.BigFloat(A)
     B = bigfloat.BigFloat(B)
@@ -371,8 +361,6 @@ def bigfloat_fast_choose_large(A, B):
     B = bigfloat.BigFloat(B)
     if B == 0.0 or B == A:
         return bigfloat.BigFloat(1.0)
-    if B == 1.0 or B == (A - 1.0):
-        return A
 
     pi = bigfloat.const_pi()
     e = bigfloat.exp(1.0)
@@ -386,8 +374,6 @@ def bigfloat_fast_choose_small(A, B):
     B = bigfloat.BigFloat(B)
     if B == 0.0 or B == A:
         return bigfloat.BigFloat(1.0)
-    if B == 1.0 or B == (A - 1.0):
-        return A
 
     pi = bigfloat.const_pi()
     e = bigfloat.exp(1.0)
@@ -507,12 +493,12 @@ def bigfloat_fast_prob_of_count_given_p(C, p, S):
 
     # Handle p == 0 and p == 1 with special cases due to pow issues.
     if p == zero:
-        if int(C) == 0:
+        if C == 0:
             return one
         else:
             return zero
     elif p == one:
-        if int(C) == int(S):
+        if C == S:
             return one
         else:
             return zero
@@ -910,15 +896,15 @@ def single_binomial_test():
     p1 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2.0)
     p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(3.0)
 
-    S = 10
+    S = 50
 
     thresholds = []
     p1_bounds = []
     p2_bounds = []
 
-    thresholds_to_try = 5000
+    thresholds_to_try = 100
     for t_idx in range(0, thresholds_to_try):
-        threshold = bigfloat.BigFloat(t_idx) / thresholds_to_try
+        threshold = 0.1 * bigfloat.BigFloat(t_idx) / thresholds_to_try
         p1_bound = latest_and_greatest_binomial_outer_bound(threshold, p1, S)
         p2_bound = latest_and_greatest_binomial_outer_bound(threshold, p2, S)
         thresholds.append(threshold)
@@ -947,11 +933,23 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
 # Called "fake" because it may be a non-integer.
 def find_fake_k_for_thresh(thresh, p, S):
     func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_fast_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
+
+    # k_list = []
+    # func_list = []
+    # Preview:
+    # for i in range(0, 1001):
+    #     k = (bigfloat.BigFloat(i) / 1000.0) * S * p
+    #     k_list.append(k)
+    #     func_list.append(func(k))
+    # plt.plot(k_list, func_list)
+    # plt.title("Estimation of function space")
+    # plt.show()
+
     (k, _) = binary_min_finder(func, 0, S * p)
     return k
 
 # Assumes function is convex
-def binary_min_finder(func, low, high, tol=0.00000001):
+def binary_min_finder(func, low, high, tol=0.000001):
     low = bigfloat.BigFloat(low)
     high = bigfloat.BigFloat(high)
     mid = low + ((high - low) / 2.0)
