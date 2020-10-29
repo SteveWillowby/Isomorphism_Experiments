@@ -899,15 +899,15 @@ def single_binomial_test():
     bigfloat.setcontext(bf_context)
 
     p1 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2.0)
-    p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(3.0)
+    p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(5.0)
 
-    S = 10
+    S = 20
 
     thresholds = []
     p1_bounds = []
     p2_bounds = []
 
-    thresholds_to_try = 50
+    thresholds_to_try = 100
     for t_idx in range(0, thresholds_to_try):
         threshold = 0.1 * bigfloat.BigFloat(t_idx) / thresholds_to_try
         p1_bound = latest_and_greatest_binomial_outer_bound(threshold, p1, S)
@@ -928,9 +928,6 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
     fake_k_A = find_fake_k_for_thresh(thresh, p, S)
     fake_k_B = find_fake_k_for_thresh(thresh, 1.0 - p, S)
 
-    if p == 0.5:
-        print("For thresh %f, p %f, get fake_k's \t%s \t%s" % (thresh, p, fake_k_A, fake_k_B))
-
     outer_bound_A = bigfloat_fast_exact_pow(p * (S / fake_k_A), fake_k_A)
     outer_bound_A *= bigfloat_fast_exact_pow((1.0 - p) / (1.0 - (fake_k_A / S)), S - fake_k_A)
 
@@ -940,7 +937,6 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
 
 # Called "fake" because it may be a non-integer.
 def find_fake_k_for_thresh(thresh, p, S):
-    print("thresh, p = %f, %f" % (thresh, p))
     func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
 
     """
