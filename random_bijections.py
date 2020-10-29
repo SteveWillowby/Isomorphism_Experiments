@@ -422,14 +422,19 @@ def bigfloat_fast_exact_pow(X, Y):
     return total_result
 
 def bigfloat_choose(A, B):
-    A_choose_B = bigfloat.BigFloat(1.0)
+    if A == int(A) and B == int(B):
+        A_choose_B = bigfloat.BigFloat(1.0)
 
-    B = min(B, A - B)
-    for i in range(0, int(B)):
-        A_choose_B *= (A - i)
-        A_choose_B /= (i + 1)
+        B = min(B, A - B)
+        for i in range(0, int(B)):
+            A_choose_B *= (A - i)
+            A_choose_B /= (i + 1)
 
-    return A_choose_B
+        return A_choose_B
+
+    top_gamma = bigfloat.lngamma(A + 1.0)
+    bot_gamma = bigfloat.lngamma(B + 1.0) + bigfloat.lngamma((A - B) + 1.0)
+    return bigfloat.exp(top_gamma - bot_gamma)
 
 def bigfloat_prob_of_count_given_p(C, p, S):
     assert float(p) <= 1.0
@@ -896,13 +901,13 @@ def single_binomial_test():
     p1 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(2.0)
     p2 = bigfloat.BigFloat(1.0) / bigfloat.BigFloat(3.0)
 
-    S = 50
+    S = 10
 
     thresholds = []
     p1_bounds = []
     p2_bounds = []
 
-    thresholds_to_try = 100
+    thresholds_to_try = 50
     for t_idx in range(0, thresholds_to_try):
         threshold = 0.1 * bigfloat.BigFloat(t_idx) / thresholds_to_try
         p1_bound = latest_and_greatest_binomial_outer_bound(threshold, p1, S)
@@ -923,6 +928,9 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
     fake_k_A = find_fake_k_for_thresh(thresh, p, S)
     fake_k_B = find_fake_k_for_thresh(thresh, 1.0 - p, S)
 
+    if p == 0.5:
+        print("For thresh %f, p %f, get fake_k's \t%s \t%s" % (thresh, p, fake_k_A, fake_k_B))
+
     outer_bound_A = bigfloat_fast_exact_pow(p * (S / fake_k_A), fake_k_A)
     outer_bound_A *= bigfloat_fast_exact_pow((1.0 - p) / (1.0 - (fake_k_A / S)), S - fake_k_A)
 
@@ -932,24 +940,39 @@ def latest_and_greatest_binomial_outer_bound(thresh, p, S):
 
 # Called "fake" because it may be a non-integer.
 def find_fake_k_for_thresh(thresh, p, S):
-    func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_fast_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
+    print("thresh, p = %f, %f" % (thresh, p))
+    func = (lambda x: lambda y: bigfloat.abs(x[0] - bigfloat_prob_of_count_given_p(y, x[1], x[2])))((thresh, p, S))
 
-    # k_list = []
-    # func_list = []
-    # Preview:
-    # for i in range(0, 1001):
-    #     k = (bigfloat.BigFloat(i) / 1000.0) * S * p
-    #     k_list.append(k)
-    #     func_list.append(func(k))
-    # plt.plot(k_list, func_list)
-    # plt.title("Estimation of function space")
-    # plt.show()
+    """
+    k_list = []
+    func_list = []
+    num_elts = 100
+    for i in range(0, num_elts + 1):
+        k = (bigfloat.BigFloat(i) / num_elts) * S * p
+        k_list.append(k)
+        func_list.append(func(k))
+    plt.plot(k_list, func_list)
+    plt.title("Estimation of function space")
+    plt.show()
+
+    k_list = []
+    func_list = []
+    flat_list = []
+    for i in range(0, num_elts + 1):
+        k = (bigfloat.BigFloat(i) / num_elts) * S * p
+        k_list.append(k)
+        func_list.append(bigfloat_prob_of_count_given_p(k, p, S))
+    plt.plot(k_list, func_list)
+    plt.plot([0.0, S * p], [thresh, thresh])
+    plt.title("Func and threshold.")
+    plt.show()
+    """
 
     (k, _) = binary_min_finder(func, 0, S * p)
     return k
 
 # Assumes function is convex
-def binary_min_finder(func, low, high, tol=0.000001):
+def binary_min_finder(func, low, high, tol=bigfloat.BigFloat(2.0**(-30)), error_depth=1):
     low = bigfloat.BigFloat(low)
     high = bigfloat.BigFloat(high)
     mid = low + ((high - low) / 2.0)
@@ -964,6 +987,14 @@ def binary_min_finder(func, low, high, tol=0.000001):
 
     best_arg = mid
     best_func = mid_func
+    if low_func < best_func:
+        best_arg = low
+        best_func = low_func
+    if high_func < best_func:
+        best_arg = high
+        best_func = high_func
+
+    iters = 0
 
     while high - low > tol:
         # print("  Remaining: %f" % ((high - low) - tol))
@@ -977,29 +1008,90 @@ def binary_min_finder(func, low, high, tol=0.000001):
         val_func_pairs.append((right_mid, right_mid_func))
 
         if left_mid_func < right_mid_func and left_mid_func < best_func:
+            # print("A entails...")
             best_func = left_mid_func
             best_arg = left_mid
         elif right_mid_func < best_func:
+            # print("B entails...")
             best_func = right_mid_func
             best_arg = right_mid
+        else:
+            pass
+            # print("C is free...")
 
         if mid_func < left_mid_func and mid_func < right_mid_func:
             high = right_mid
             low = left_mid
             high_func = right_mid_func
             low_func = left_mid_func
-        elif mid_func < left_mid_func:
-            assert mid_func >= right_mid_func
+        elif right_mid_func < mid_func and mid_func < left_mid_func:
+            low = mid
+            low_func = mid_func
+            mid = right_mid
+            mid_func = right_mid_func
+        elif right_mid_func > mid_func and mid_func > left_mid_func:
+            high = mid
+            high_func = mid_func
+            mid = left_mid
+            mid_func = left_mid_func
+        elif right_mid_func == mid_func and mid_func == left_mid_func:
+            print("Wow!")
+            high = mid
+            high_func = mid_func
+            low = mid
+            low_func = mid_func
+        elif right_mid_func == mid_func and mid_func < left_mid_func:
+            low = mid
+            low_func = mid_func
+            mid = right_mid
+            mid_func = right_mid_func
+        elif left_mid_func == mid_func and mid_func < right_mid_func:
+            high = mid
+            high_func = mid_func
+            mid = left_mid
+            mid_func = left_mid_func
+        elif right_mid_func == mid_func:
+            assert mid_func > left_mid_func
+            high = mid
+            high_func = mid_func
+            mid = left_mid
+            mid_func = left_mid_func
+        elif left_mid_func == mid_func:
+            assert mid_func > right_mid_func
             low = mid
             low_func = mid_func
             mid = right_mid
             mid_func = right_mid_func
         else:
-            # assert mid_func >= left_mid_func
-            high = mid
-            high_func = mid_func
-            mid = left_mid
-            mid_func = right_mid_func
+            assert mid_func > left_mid_func and mid_func > right_mid_func
+            assert left_mid != mid and right_mid != mid
+
+            """
+            print("Error! Convexity assumption broken!")
+            print("  low    \tleft_mid \tmid     \tright_mid \thigh")
+            print("  %f \t%f \t%f \t%f \t%f" % (low, left_mid, mid, right_mid, high))
+            print("  %f \t%f \t%f \t%f \t%f" % (low_func, left_mid_func, mid_func, right_mid_func, high_func))
+            return (best_arg, best_func)
+            """
+            print("Error! Convexity assumption broken at a depth of %d" % error_depth)
+            if float(left_mid_func) == float(right_mid_func):
+                print("Results are close enough to quit.")
+                if left_mid_func < right_mid_func:
+                    return (left_mid, left_mid_func)
+                else:
+                    return (right_mid, right_mid_func)
+            print("  low    \tleft_mid \tmid     \tright_mid \thigh")
+            print("  %f \t%f \t%f \t%f \t%f" % (low, left_mid, mid, right_mid, high))
+            print("  %f \t%f \t%f \t%f \t%f" % (low_func, left_mid_func, mid_func, right_mid_func, high_func))
+            (best_arg_left, best_func_left) = binary_min_finder(func, low, mid, tol=tol, error_depth=(error_depth + 1))
+            (best_arg_right, best_func_right) = binary_min_finder(func, mid, high, tol=tol, error_depth=(error_depth + 1))
+            if best_func_left < best_func_right:
+                return (best_arg_left, best_func_left)
+            else:
+                return (best_arg_right, best_func_right)
+
+        iters += 1
+    # print("Iters: %d" % iters)
 
     """
     val_func_pairs.sort()
