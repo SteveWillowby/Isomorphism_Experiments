@@ -12,17 +12,20 @@ def __best_m_and_evidence_strength_helper__(P_X_given_N, P_N, n, m):
     assert P_N != 1.0
     assert P_N != 0.0
     P_not_N = 1.0 - P_N
-    return  ((P_not_N * (1.0 - (n - 1) / m)) * \
-        ((P_X_given_N * P_N) / (P_X_given_N * P_N + (1.0 / m) * P_not_N)) + \
-             (1.0 - (P_not_N * (1.0 - (n - 1) / m))) * P_N) / P_N
+    chance_correct = (P_not_N * (1.0 - (n - 1) / m))
+    if_correct = (P_X_given_N * P_N) / (P_X_given_N * P_N + (1.0 / m) * P_not_N)
+    alpha = chance_correct * if_correct + (1.0 - chance_correct) * P_N
+    return ((1.0 - alpha) * P_N) / (alpha * P_not_N)
 
 def best_m_and_evidence_strength(C, coin_prob, n, P_N):
     P_X_given_N = bigfloat_prob_of_count_given_p(C, coin_prob, n - 1)
     if P_X_given_N >= 1.0 / n:
         return (None, 1.0)
-    func = (lambda x: lambda y: __best_m_and_evidence_strength_helper__(x[0], x[1], x[2], y))((P_X_given_N, P_N, n))
+    func = (lambda x: lambda y: 1.0 / __best_m_and_evidence_strength_helper__(x[0], x[1], x[2], y))((P_X_given_N, P_N, n))
     # return (best_arg, best_func)
-    return min_finder(func, n - 1)
+    (best_m, best_func_val) = min_finder(func, n - 1)
+
+    return (best_m, 1.0 / best_func_val)
 
 # func must be convex
 def min_finder(func, low_arg, tol=bigfloat.BigFloat(2.0**(-30))):
@@ -50,15 +53,15 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
     bigfloat.setcontext(bf_context)
 
-    # start_P_N = bigfloat.pow(2.0, -20)
-    # end_P_N = bigfloat.BigFloat(1.0) - start_P_N
-    start_P_N = bigfloat.BigFloat(1.0) / 3.0
-    end_P_N = bigfloat.BigFloat(2.0) / 3.0
-    P_N_increment = (end_P_N - start_P_N) / 60.0
+    start_P_N = bigfloat.pow(2.0, -20)
+    end_P_N = bigfloat.BigFloat(1.0) - start_P_N
+    # start_P_N = bigfloat.BigFloat(1.0) / 3.0
+    # end_P_N = bigfloat.BigFloat(2.0) / 3.0
+    P_N_increment = (end_P_N - start_P_N) / 10.0
 
     coin_prob = 0.5
 
-    S = 100
+    S = 10
 
     start_C = 0
     end_C = S
@@ -82,9 +85,8 @@ if __name__ == "__main__":
                 best_m = "N/A"
             else:
                 best_m = str(float(best_m))
-            print("    Best m: %s -- Best evidence strength: %f" % (best_m, 1.0 / best_evidence_strength))
-            evidence_vals[-1].append(float(1.0 / best_evidence_strength))
-            # evidence_vals[-1].append(float(bigfloat.log(1.0 / best_evidence_strength)))
+            print("    Best m: %s -- Best evidence strength: %f" % (best_m, best_evidence_strength))
+            evidence_vals[-1].append(float(best_evidence_strength))
 
             P_N += P_N_increment
         C += C_increment
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     plt.suptitle("Log of Strength of Evidence Against Null (N)")
     plt.xlabel("Number of Heads H")
     plt.ylabel("Prior Value, P(N)")
-    plt.title("P(N) / P(N | H)")
+    plt.title("P(N | not-H) / P(N | H)")
 
     plt.show()
 
